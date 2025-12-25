@@ -98,21 +98,57 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   ),
                  const SizedBox(height: 30),
                  
-                // Tabs
-                TabBar(
-                  controller: _tabController,
-                  isScrollable: true,
-                  labelColor: AppColors.primaryGreen,
-                  unselectedLabelColor: Colors.grey,
-                  indicatorColor: AppColors.primaryGreen,
-                  indicatorWeight: 3, 
-                  labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  tabs: const [
-                    Tab(text: "Foods"),
-                    Tab(text: "Drinks"),
-                    Tab(text: "Snacks"),
-                    Tab(text: "Sauces"),
-                  ],
+                // Tabs - Dynamic from Categories
+                Consumer<CategoryProvider>(
+                  builder: (context, categoryProvider, child) {
+                    if (categoryProvider.isLoading) {
+                      return const SizedBox(
+                        height: 40,
+                        child: Center(child: CircularProgressIndicator()),
+                      );
+                    }
+
+                    if (categoryProvider.error != null || categoryProvider.categories.isEmpty) {
+                      // Fallback to default tabs if categories fail to load
+                      return TabBar(
+                        controller: _tabController,
+                        isScrollable: true,
+                        labelColor: AppColors.primaryGreen,
+                        unselectedLabelColor: Colors.grey,
+                        indicatorColor: AppColors.primaryGreen,
+                        indicatorWeight: 3,
+                        labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        tabs: const [
+                          Tab(text: "All"),
+                          Tab(text: "Popular"),
+                          Tab(text: "New"),
+                          Tab(text: "Sale"),
+                        ],
+                      );
+                    }
+
+                    // Rebuild TabController with correct length
+                    if (_tabController.length != categoryProvider.categories.length) {
+                      _tabController.dispose();
+                      _tabController = TabController(
+                        length: categoryProvider.categories.length,
+                        vsync: this,
+                      );
+                    }
+
+                    return TabBar(
+                      controller: _tabController,
+                      isScrollable: true,
+                      labelColor: AppColors.primaryGreen,
+                      unselectedLabelColor: Colors.grey,
+                      indicatorColor: AppColors.primaryGreen,
+                      indicatorWeight: 3,
+                      labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      tabs: categoryProvider.categories
+                          .map((category) => Tab(text: category.name))
+                          .toList(),
+                    );
+                  },
                 ),
                  const SizedBox(height: 20),
                  

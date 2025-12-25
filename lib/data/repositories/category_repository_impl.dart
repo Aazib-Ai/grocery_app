@@ -132,7 +132,7 @@ class CategoryRepositoryImpl implements CategoryRepository {
       // Check if category has any products
       final productResponse = await _supabase
           .from('products')
-          .select('id', const FetchOptions(count: CountOption.exact))
+          .select('id')
           .eq('category_id', id);
 
       final productCount = (productResponse as List).length;

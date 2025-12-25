@@ -88,20 +88,20 @@
     - Update lib/features/home/home_screen.dart to fetch from Supabase
     - _Requirements: 2.5_
 
-- [ ] 6. Implement category management
-  - [ ] 6.1 Create category data models and repository
+- [x] 6. Implement category management
+  - [x] 6.1 Create category data models and repository
     - Create lib/data/models/category_model.dart
     - Create lib/domain/entities/category.dart
     - Create lib/domain/repositories/category_repository.dart interface
     - Create lib/data/repositories/category_repository_impl.dart
     - _Requirements: 3.1, 3.2, 3.3, 3.4_
-  - [ ] 6.2 Write property test for category CRUD round-trip
+  - [x] 6.2 Write property test for category CRUD round-trip
     - **Property 10: Category CRUD Round-Trip**
     - **Validates: Requirements 3.1, 3.2**
-  - [ ] 6.3 Write property test for category deletion protection
+  - [x] 6.3 Write property test for category deletion protection
     - **Property 11: Category Deletion Protection**
     - **Validates: Requirements 3.3**
-  - [ ] 6.4 Create category provider and update home screen
+  - [x] 6.4 Create category provider and update home screen
     - Create lib/features/categories/providers/category_provider.dart
     - Update home screen to display categories from Supabase
     - _Requirements: 3.4_
@@ -109,52 +109,52 @@
 - [ ] 7. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 8. Implement cart functionality
-  - [ ] 8.1 Create cart data models and repository
+- [x] 8. Implement cart functionality
+  - [x] 8.1 Create cart data models and repository
     - Update lib/data/models/cart_item.dart with Supabase fields
     - Create lib/domain/repositories/cart_repository.dart interface
     - Create lib/data/repositories/cart_repository_impl.dart
     - _Requirements: 4.1, 4.2, 4.3, 4.4_
-  - [ ] 8.2 Write property test for cart operations round-trip
+  - [x] 8.2 Write property test for cart operations round-trip
     - **Property 12: Cart Operations Round-Trip**
     - **Validates: Requirements 4.1, 4.2**
-  - [ ] 8.3 Write property test for cart removal
+  - [x] 8.3 Write property test for cart removal
     - **Property 13: Cart Removal**
     - **Validates: Requirements 4.3**
-  - [ ] 8.4 Write property test for cart total calculation
+  - [x] 8.4 Write property test for cart total calculation
     - **Property 14: Cart Total Calculation**
     - **Validates: Requirements 4.4**
-  - [ ] 8.5 Create cart provider
+  - [x] 8.5 Create cart provider
     - Create lib/features/cart/providers/cart_provider.dart
     - Implement add, update, remove, and total calculation
     - _Requirements: 4.1, 4.2, 4.3, 4.4_
-  - [ ] 8.6 Update cart screen to use Supabase
+  - [x] 8.6 Update cart screen to use Supabase
     - Refactor lib/features/cart/cart_screen.dart
     - Refactor lib/features/cart/widgets/cart_item_widget.dart
     - _Requirements: 4.1, 4.4_
 
-- [ ] 9. Implement order management
-  - [ ] 9.1 Create order data models and repository
+- [x] 9. Implement order management
+  - [x] 9.1 Create order data models and repository
     - Create lib/data/models/order_model.dart
     - Create lib/data/models/order_item_model.dart
     - Create lib/domain/entities/order.dart
     - Create lib/domain/repositories/order_repository.dart interface
     - Create lib/data/repositories/order_repository_impl.dart
     - _Requirements: 4.5, 5.1, 5.2, 5.3, 5.4_
-  - [ ] 9.2 Write property test for checkout creates order
+  - [x] 9.2 Write property test for checkout creates order
     - **Property 15: Checkout Creates Order and Clears Cart**
     - **Validates: Requirements 4.5**
-  - [ ] 9.3 Write property test for order filter accuracy
+  - [x] 9.3 Write property test for order filter accuracy
     - **Property 16: Order Filter Accuracy**
     - **Validates: Requirements 5.1**
-  - [ ] 9.4 Write property test for customer order isolation
+  - [x] 9.4 Write property test for customer order isolation
     - **Property 19: Customer Order Isolation**
     - **Validates: Requirements 5.4**
-  - [ ] 9.5 Create order provider
+  - [x] 9.5 Create order provider
     - Create lib/features/orders/providers/order_provider.dart
     - Implement order creation, status updates, and filtering
     - _Requirements: 4.5, 5.1, 5.2_
-  - [ ] 9.6 Update checkout and order screens
+  - [x] 9.6 Update checkout and order screens
     - Refactor lib/features/checkout/delivery_details_screen.dart
     - Refactor lib/features/checkout/payment_method_screen.dart
     - Refactor lib/features/orders/orders_screen.dart
