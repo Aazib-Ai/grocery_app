@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'core/config/supabase_config.dart';
 import 'core/theme/app_theme.dart';
 import 'features/onboarding/onboarding_screen.dart';
 import 'features/auth/auth_screen.dart';
@@ -23,8 +24,63 @@ import 'features/orders/orders_screen.dart';
 import 'data/repositories/mock_repository.dart';
 import 'main_wrapper.dart';
 
-void main() {
-  runApp(const GroceryApp());
+void main() async {
+  // Ensure Flutter is initialized
+  WidgetsFlutterBinding.ensureInitialized();
+
+  try {
+    // Initialize Supabase before running the app
+    await SupabaseConfig.initialize();
+    
+    // Run the app
+    runApp(const GroceryApp());
+  } catch (e) {
+    // Handle initialization errors
+    runApp(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.error_outline,
+                    size: 64,
+                    color: Colors.red,
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Initialization Error',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    e.toString(),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Please check your .env file and ensure:\n'
+                    '1. SUPABASE_URL is set correctly\n'
+                    '2. SUPABASE_ANON_KEY is set correctly\n'
+                    '3. Both values are not placeholders',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 14),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class GroceryApp extends StatelessWidget {

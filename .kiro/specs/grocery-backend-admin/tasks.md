@@ -1,0 +1,390 @@
+# Implementation Plan
+
+- [x] 1. Set up Supabase and project infrastructure
+  - [x] 1.1 Add Supabase dependencies to pubspec.yaml (supabase_flutter, flutter_dotenv)
+    - Add supabase_flutter, flutter_dotenv, and glados (for property testing) packages
+    - Create .env file for Supabase URL and anon key
+    - _Requirements: 1.1, 1.2_
+  - [x] 1.2 Create Supabase database schema
+    - Execute SQL to create all tables: profiles, categories, products, addresses, cart_items, orders, order_items, riders, delivery_tracking, favorites
+    - Set up Row Level Security policies for each table
+    - _Requirements: 1.3, 1.6, 5.4_
+  - [x] 1.3 Initialize Supabase client and app configuration
+    - Create lib/core/config/supabase_config.dart
+    - Update main.dart to initialize Supabase before runApp
+    - _Requirements: 1.1_
+  - [x] 1.4 Write property test for route protection
+    - **Property 2: Route Protection by Authentication**
+    - **Validates: Requirements 1.5**
+
+- [ ] 2. Implement authentication module
+  - [ ] 2.1 Create auth service and models
+    - Create lib/core/auth/auth_service.dart with signUp, signIn, signOut, resetPassword
+    - Create lib/core/auth/auth_state.dart for authentication state management
+    - Create lib/data/models/user_model.dart
+    - _Requirements: 1.1, 1.2, 1.7_
+  - [ ] 2.2 Create auth provider for state management
+    - Create lib/core/auth/auth_provider.dart using ChangeNotifier
+    - Implement session persistence with secure storage
+    - _Requirements: 1.4_
+  - [ ] 2.3 Implement role-based authorization
+    - Create lib/core/auth/auth_guard.dart for route protection
+    - Add role checking to auth provider
+    - _Requirements: 1.3, 1.6_
+  - [ ] 2.4 Write property test for user role retrieval
+    - **Property 1: User Role Retrieval Consistency**
+    - **Validates: Requirements 1.3**
+  - [ ] 2.5 Write property test for admin route authorization
+    - **Property 3: Admin Route Authorization**
+    - **Validates: Requirements 1.6**
+  - [ ] 2.6 Update auth screens to use Supabase
+    - Refactor lib/features/auth/auth_screen.dart to use AuthService
+    - Refactor lib/features/auth/forgot_password_screen.dart
+    - _Requirements: 1.1, 1.2, 1.7_
+
+- [ ] 3. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [ ] 4. Implement Cloudflare R2 image storage
+  - [ ] 4.1 Create image storage service
+    - Create lib/core/storage/image_storage_service.dart
+    - Implement uploadProductImage, uploadUserAvatar, deleteImage methods
+    - Use Supabase Edge Functions or direct R2 API
+    - _Requirements: 13.1, 13.2, 13.3_
+  - [ ] 4.2 Create image validator
+    - Create lib/core/validators/image_validator.dart
+    - Validate file type (JPEG, PNG, WebP) and size (max 5MB)
+    - _Requirements: 2.4_
+  - [ ] 4.3 Write property test for image validation
+    - **Property 6: Image Validation**
+    - **Validates: Requirements 2.4**
+  - [ ] 4.4 Write property test for image upload uniqueness
+    - **Property 37: Image Upload Uniqueness**
+    - **Validates: Requirements 13.1**
+
+- [ ] 5. Implement product management
+  - [ ] 5.1 Create product data models and repository
+    - Create lib/data/models/product_model.dart with fromJson/toJson
+    - Create lib/domain/entities/product.dart
+    - Create lib/domain/repositories/product_repository.dart interface
+    - Create lib/data/repositories/product_repository_impl.dart
+    - _Requirements: 2.1, 2.2, 2.3, 2.5, 2.6_
+  - [ ] 5.2 Write property test for product CRUD round-trip
+    - **Property 4: Product CRUD Round-Trip**
+    - **Validates: Requirements 2.1, 2.2**
+  - [ ] 5.3 Write property test for product soft delete
+    - **Property 5: Product Soft Delete**
+    - **Validates: Requirements 2.3**
+  - [ ] 5.4 Write property test for customer product visibility
+    - **Property 7: Customer Product Visibility**
+    - **Validates: Requirements 2.5**
+  - [ ] 5.5 Create product provider
+    - Create lib/features/products/providers/product_provider.dart
+    - Implement product list, search, and CRUD operations
+    - _Requirements: 2.1, 2.5_
+  - [ ] 5.6 Update product screens to use Supabase
+    - Refactor lib/features/products/product_listing_screen.dart
+    - Refactor lib/features/products/product_details_screen.dart
+    - Update lib/features/home/home_screen.dart to fetch from Supabase
+    - _Requirements: 2.5_
+
+- [ ] 6. Implement category management
+  - [ ] 6.1 Create category data models and repository
+    - Create lib/data/models/category_model.dart
+    - Create lib/domain/entities/category.dart
+    - Create lib/domain/repositories/category_repository.dart interface
+    - Create lib/data/repositories/category_repository_impl.dart
+    - _Requirements: 3.1, 3.2, 3.3, 3.4_
+  - [ ] 6.2 Write property test for category CRUD round-trip
+    - **Property 10: Category CRUD Round-Trip**
+    - **Validates: Requirements 3.1, 3.2**
+  - [ ] 6.3 Write property test for category deletion protection
+    - **Property 11: Category Deletion Protection**
+    - **Validates: Requirements 3.3**
+  - [ ] 6.4 Create category provider and update home screen
+    - Create lib/features/categories/providers/category_provider.dart
+    - Update home screen to display categories from Supabase
+    - _Requirements: 3.4_
+
+- [ ] 7. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [ ] 8. Implement cart functionality
+  - [ ] 8.1 Create cart data models and repository
+    - Update lib/data/models/cart_item.dart with Supabase fields
+    - Create lib/domain/repositories/cart_repository.dart interface
+    - Create lib/data/repositories/cart_repository_impl.dart
+    - _Requirements: 4.1, 4.2, 4.3, 4.4_
+  - [ ] 8.2 Write property test for cart operations round-trip
+    - **Property 12: Cart Operations Round-Trip**
+    - **Validates: Requirements 4.1, 4.2**
+  - [ ] 8.3 Write property test for cart removal
+    - **Property 13: Cart Removal**
+    - **Validates: Requirements 4.3**
+  - [ ] 8.4 Write property test for cart total calculation
+    - **Property 14: Cart Total Calculation**
+    - **Validates: Requirements 4.4**
+  - [ ] 8.5 Create cart provider
+    - Create lib/features/cart/providers/cart_provider.dart
+    - Implement add, update, remove, and total calculation
+    - _Requirements: 4.1, 4.2, 4.3, 4.4_
+  - [ ] 8.6 Update cart screen to use Supabase
+    - Refactor lib/features/cart/cart_screen.dart
+    - Refactor lib/features/cart/widgets/cart_item_widget.dart
+    - _Requirements: 4.1, 4.4_
+
+- [ ] 9. Implement order management
+  - [ ] 9.1 Create order data models and repository
+    - Create lib/data/models/order_model.dart
+    - Create lib/data/models/order_item_model.dart
+    - Create lib/domain/entities/order.dart
+    - Create lib/domain/repositories/order_repository.dart interface
+    - Create lib/data/repositories/order_repository_impl.dart
+    - _Requirements: 4.5, 5.1, 5.2, 5.3, 5.4_
+  - [ ] 9.2 Write property test for checkout creates order
+    - **Property 15: Checkout Creates Order and Clears Cart**
+    - **Validates: Requirements 4.5**
+  - [ ] 9.3 Write property test for order filter accuracy
+    - **Property 16: Order Filter Accuracy**
+    - **Validates: Requirements 5.1**
+  - [ ] 9.4 Write property test for customer order isolation
+    - **Property 19: Customer Order Isolation**
+    - **Validates: Requirements 5.4**
+  - [ ] 9.5 Create order provider
+    - Create lib/features/orders/providers/order_provider.dart
+    - Implement order creation, status updates, and filtering
+    - _Requirements: 4.5, 5.1, 5.2_
+  - [ ] 9.6 Update checkout and order screens
+    - Refactor lib/features/checkout/delivery_details_screen.dart
+    - Refactor lib/features/checkout/payment_method_screen.dart
+    - Refactor lib/features/orders/orders_screen.dart
+    - _Requirements: 4.5, 5.4_
+
+- [ ] 10. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [ ] 11. Implement rider management
+  - [ ] 11.1 Create rider data models and repository
+    - Create lib/data/models/rider_model.dart
+    - Create lib/domain/entities/rider.dart
+    - Create lib/domain/repositories/rider_repository.dart interface
+    - Create lib/data/repositories/rider_repository_impl.dart
+    - _Requirements: 7.1, 7.2, 7.3, 7.4_
+  - [ ] 11.2 Write property test for rider CRUD round-trip
+    - **Property 23: Rider CRUD Round-Trip**
+    - **Validates: Requirements 7.1**
+  - [ ] 11.3 Write property test for rider status on assignment
+    - **Property 24: Rider Status on Assignment**
+    - **Validates: Requirements 7.3**
+  - [ ] 11.4 Write property test for rider completion updates
+    - **Property 25: Rider Status and Count on Completion**
+    - **Validates: Requirements 7.4**
+
+- [ ] 12. Implement delivery tracking
+  - [ ] 12.1 Create tracking data models and repository
+    - Create lib/data/models/delivery_location_model.dart
+    - Create lib/domain/entities/delivery_location.dart
+    - Create lib/domain/repositories/tracking_repository.dart interface
+    - Create lib/data/repositories/tracking_repository_impl.dart with Supabase realtime
+    - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
+  - [ ] 12.2 Write property test for real-time location propagation
+    - **Property 20: Real-Time Location Propagation**
+    - **Validates: Requirements 6.3**
+  - [ ] 12.3 Write property test for delivery completion stops tracking
+    - **Property 21: Delivery Completion Stops Tracking**
+    - **Validates: Requirements 6.5**
+  - [ ] 12.4 Create tracking provider
+    - Create lib/features/tracking/providers/tracking_provider.dart
+    - Implement real-time location subscription
+    - _Requirements: 6.2, 6.3_
+  - [ ] 12.5 Update order tracking screen with Google Maps
+    - Refactor lib/features/tracking/order_tracking_screen.dart
+    - Add real-time marker updates
+    - Add ETA calculation using Google Maps Directions API
+    - _Requirements: 6.2, 6.3, 6.4_
+
+- [ ] 13. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [ ] 14. Implement favorites functionality
+  - [ ] 14.1 Create favorites repository
+    - Create lib/domain/repositories/favorites_repository.dart interface
+    - Create lib/data/repositories/favorites_repository_impl.dart
+    - _Requirements: 11.1, 11.2, 11.3_
+  - [ ] 14.2 Write property test for favorites round-trip
+    - **Property 33: Favorites Round-Trip**
+    - **Validates: Requirements 11.1, 11.2**
+  - [ ] 14.3 Create favorites provider and update screen
+    - Create lib/features/favorites/providers/favorites_provider.dart
+    - Refactor lib/features/favorites/favorites_screen.dart
+    - _Requirements: 11.1, 11.2, 11.3_
+
+- [ ] 15. Implement search and filtering
+  - [ ] 15.1 Create search service
+    - Create lib/features/search/services/search_service.dart
+    - Implement full-text search with Supabase
+    - _Requirements: 12.1, 12.2, 12.3, 12.4_
+  - [ ] 15.2 Write property test for search results match query
+    - **Property 34: Search Results Match Query**
+    - **Validates: Requirements 12.1**
+  - [ ] 15.3 Write property test for category filter accuracy
+    - **Property 35: Category Filter Accuracy**
+    - **Validates: Requirements 12.2**
+  - [ ] 15.4 Write property test for sort order correctness
+    - **Property 36: Sort Order Correctness**
+    - **Validates: Requirements 12.3**
+  - [ ] 15.5 Update search screen
+    - Refactor lib/features/search/search_screen.dart with filters and sorting
+    - _Requirements: 12.1, 12.2, 12.3, 12.4_
+
+- [ ] 16. Implement customer profile management
+  - [ ] 16.1 Create address data models and repository
+    - Create lib/data/models/address_model.dart
+    - Create lib/domain/repositories/address_repository.dart interface
+    - Create lib/data/repositories/address_repository_impl.dart
+    - _Requirements: 10.2, 10.3, 10.4_
+  - [ ] 16.2 Write property test for profile update round-trip
+    - **Property 30: Profile Update Round-Trip**
+    - **Validates: Requirements 10.1**
+  - [ ] 16.3 Write property test for address round-trip
+    - **Property 31: Address Round-Trip**
+    - **Validates: Requirements 10.2**
+  - [ ] 16.4 Write property test for single default address
+    - **Property 32: Single Default Address**
+    - **Validates: Requirements 10.3**
+  - [ ] 16.5 Create profile provider and update screens
+    - Create lib/features/profile/providers/profile_provider.dart
+    - Refactor lib/features/profile/profile_screen.dart
+    - Refactor lib/features/profile/edit_profile_screen.dart
+    - Add address management UI
+    - _Requirements: 10.1, 10.2, 10.3, 10.4_
+
+- [ ] 17. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [ ] 18. Implement admin dashboard - Products
+  - [ ] 18.1 Create admin navigation and layout
+    - Create lib/features/admin/admin_wrapper.dart with admin navigation
+    - Create lib/features/admin/admin_dashboard_screen.dart
+    - Update router to include admin routes with auth guard
+    - _Requirements: 9.1_
+  - [ ] 18.2 Create admin product management screens
+    - Create lib/features/admin/products/admin_products_screen.dart (list view)
+    - Create lib/features/admin/products/admin_product_form_screen.dart (create/edit)
+    - Include image upload with R2
+    - _Requirements: 2.1, 2.2, 2.3, 2.6_
+  - [ ] 18.3 Create admin category management screens
+    - Create lib/features/admin/categories/admin_categories_screen.dart
+    - Create lib/features/admin/categories/admin_category_form_screen.dart
+    - _Requirements: 3.1, 3.2, 3.3_
+
+- [ ] 19. Implement admin dashboard - Orders
+  - [ ] 19.1 Create admin order management screens
+    - Create lib/features/admin/orders/admin_orders_screen.dart with filters
+    - Create lib/features/admin/orders/admin_order_details_screen.dart
+    - Include status update and rider assignment
+    - _Requirements: 5.1, 5.2, 5.3_
+  - [ ] 19.2 Write property test for order status update persistence
+    - **Property 17: Order Status Update Persistence**
+    - **Validates: Requirements 5.2**
+  - [ ] 19.3 Write property test for rider assignment updates order
+    - **Property 18: Rider Assignment Updates Order**
+    - **Validates: Requirements 5.3**
+
+- [ ] 20. Implement admin dashboard - Riders
+  - [ ] 20.1 Create admin rider management screens
+    - Create lib/features/admin/riders/admin_riders_screen.dart
+    - Create lib/features/admin/riders/admin_rider_form_screen.dart
+    - Create lib/features/admin/riders/admin_rider_details_screen.dart
+    - _Requirements: 7.1, 7.2, 7.5_
+
+- [ ] 21. Implement admin dashboard - Users
+  - [ ] 21.1 Create admin user management screens
+    - Create lib/features/admin/users/admin_users_screen.dart with search
+    - Create lib/features/admin/users/admin_user_details_screen.dart
+    - Include disable/enable user functionality
+    - _Requirements: 8.1, 8.2, 8.3, 8.4_
+  - [ ] 21.2 Write property test for user search accuracy
+    - **Property 26: User Search Accuracy**
+    - **Validates: Requirements 8.2**
+  - [ ] 21.3 Write property test for disabled user login prevention
+    - **Property 27: Disabled User Login Prevention**
+    - **Validates: Requirements 8.3**
+
+- [ ] 22. Implement admin dashboard - Deliveries
+  - [ ] 22.1 Create admin delivery tracking screen
+    - Create lib/features/admin/deliveries/admin_deliveries_screen.dart
+    - Display all active deliveries on map with rider locations
+    - _Requirements: 6.6_
+  - [ ] 22.2 Write property test for active deliveries query
+    - **Property 22: Active Deliveries Query**
+    - **Validates: Requirements 6.6**
+
+- [ ] 23. Implement admin dashboard - Analytics
+  - [ ] 23.1 Create analytics repository and service
+    - Create lib/domain/repositories/analytics_repository.dart interface
+    - Create lib/data/repositories/analytics_repository_impl.dart
+    - Implement dashboard metrics, sales data, top products queries
+    - _Requirements: 9.1, 9.2, 9.3, 9.4_
+  - [ ] 23.2 Write property test for dashboard metrics consistency
+    - **Property 28: Dashboard Metrics Consistency**
+    - **Validates: Requirements 9.1**
+  - [ ] 23.3 Write property test for top products ordering
+    - **Property 29: Top Products Ordering**
+    - **Validates: Requirements 9.3**
+  - [ ] 23.3 Create analytics dashboard widgets
+    - Create lib/features/admin/analytics/widgets/metrics_card.dart
+    - Create lib/features/admin/analytics/widgets/sales_chart.dart
+    - Create lib/features/admin/analytics/widgets/top_products_list.dart
+    - Update admin_dashboard_screen.dart with analytics widgets
+    - _Requirements: 9.1, 9.2, 9.3, 9.4_
+
+- [ ] 24. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [ ] 25. Implement real-time updates
+  - [ ] 25.1 Create real-time service
+    - Create lib/core/realtime/realtime_service.dart
+    - Implement Supabase realtime subscriptions for products, orders, tracking
+    - _Requirements: 14.1, 14.2, 14.3, 14.4_
+  - [ ] 25.2 Integrate real-time updates into providers
+    - Update product_provider.dart with real-time product updates
+    - Update order_provider.dart with real-time order status updates
+    - Update tracking_provider.dart with real-time location updates
+    - _Requirements: 14.1, 14.2, 14.3_
+
+- [ ] 26. UI/UX improvements
+  - [ ] 26.1 Create loading and error widgets
+    - Create lib/shared/widgets/skeleton_loader.dart
+    - Create lib/shared/widgets/error_widget.dart with retry
+    - Update lib/shared/widgets/empty_state_widget.dart
+    - _Requirements: 15.2, 15.3_
+  - [ ] 26.2 Create splash screen
+    - Create lib/features/splash/splash_screen.dart
+    - Update router to start with splash screen
+    - _Requirements: 15.1_
+  - [ ] 26.3 Improve existing screens with loading states
+    - Add skeleton loaders to all list screens
+    - Add error handling with retry to all data-fetching screens
+    - _Requirements: 15.2, 15.3, 15.4_
+  - [ ] 26.4 Ensure responsive layouts
+    - Review and update all screens for tablet/different screen sizes
+    - _Requirements: 15.5_
+
+- [ ] 27. Final integration and cleanup
+  - [ ] 27.1 Update routing with auth guards
+    - Update lib/main.dart router with role-based redirects
+    - Add admin routes to router
+    - _Requirements: 1.5, 1.6_
+  - [ ] 27.2 Remove mock repository
+    - Delete lib/data/repositories/mock_repository.dart
+    - Ensure all screens use Supabase repositories
+    - _Requirements: All_
+  - [ ] 27.3 Add environment configuration
+    - Create production and development environment configs
+    - Document setup instructions in README
+    - _Requirements: All_
+
+- [ ] 28. Final Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
