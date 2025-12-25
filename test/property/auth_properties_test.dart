@@ -1,7 +1,7 @@
-import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test/flutter_test.dart' hide test, group, expect, setUp, tearDown, setUpAll, tearDownAll;
 import 'package:glados/glados.dart';
 import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mockito/mockito.dart' hide any;
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 import 'package:grocery_app/core/auth/auth_service.dart';
 import 'package:grocery_app/core/auth/auth_state.dart';
@@ -34,9 +34,10 @@ void main() {
       mockAuthService = MockAuthService();
     });
 
-    Glados2<String, UserRole>().test(
+    Glados2(any.letterOrDigits, any.int).test(
       'User role retrieved matches database role for all users',
-      (userId, expectedRole) {
+      (userId, roleIndex) {
+        final expectedRole = UserRole.values[roleIndex.abs() % UserRole.values.length];
         // Given a user ID and an expected role from the database
         final mockUser = _createMockUser(userId);
         
@@ -58,7 +59,6 @@ void main() {
         // Verify that getUserRole was called
         verify(mockAuthService.getUserRole()).called(1);
       },
-      maxRuns: 100,
     );
 
     test('Role retrieval is consistent across multiple calls', () async {
@@ -98,9 +98,10 @@ void main() {
       authGuard = AuthGuard(authProvider);
     });
 
-    Glados<UserRole>().test(
+    Glados(any.int).test(
       'Customer users cannot access admin routes',
-      (userRole) async {
+      (roleIndex) async {
+        final userRole = UserRole.values[roleIndex.abs() % UserRole.values.length];
         // Given a user with a specific role
         final mockUser = _createMockUser('user-${userRole.name}');
         
@@ -127,7 +128,6 @@ void main() {
               reason: 'Customer users should NOT access admin routes');
         }
       },
-      maxRuns: 50,
     );
 
     test('Admin users can access all routes', () async {

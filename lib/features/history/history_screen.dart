@@ -15,10 +15,7 @@ class HistoryScreen extends StatelessWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         foregroundColor: Colors.black,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {}, // Handled by bottom nav usually, or pop
-        ),
+        automaticallyImplyLeading: false, // No back button for bottom nav screens
       ),
       body: EmptyStateWidget(
         icon: Icons.calendar_today, // Calendar icon

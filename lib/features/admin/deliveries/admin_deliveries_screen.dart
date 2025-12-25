@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import '../../tracking/providers/tracking_provider.dart';
 import '../../../domain/entities/delivery_location.dart';
@@ -12,14 +13,11 @@ class AdminDeliveriesScreen extends StatefulWidget {
 }
 
 class _AdminDeliveriesScreenState extends State<AdminDeliveriesScreen> {
-  GoogleMapController? _mapController;
-  final Set<Marker> _markers = {};
+  final MapController _mapController = MapController();
   
   // Default to a central location (e.g., city center) if no deliveries
-  static const _initialCameraPosition = CameraPosition(
-    target: LatLng(37.7749, -122.4194), // San Francisco
-    zoom: 12,
-  );
+  static const _initialCenter = LatLng(31.5204, 74.3587); // Lahore
+  static const _initialZoom = 12.0;
 
   @override
   void initState() {
@@ -33,40 +31,9 @@ class _AdminDeliveriesScreenState extends State<AdminDeliveriesScreen> {
 
   @override
   void dispose() {
-    // We don't dispose the stream here because the provider manages it,
-    // but typically we should tell the provider to stop watching *if* 
-    // we want to save resources and assuming no other screen needs it.
-    // Given the provider structure, we might want to manually stop watching
-    // or let the provider handle it.
-    // Let's be safe and stop watching active deliveries when leaving this screen.
-    context.read<TrackingProvider>().stopWatchingAllDeliveries();
-    _mapController?.dispose();
+    // context.read<TrackingProvider>().stopWatchingAllDeliveries();
+    _mapController.dispose();
     super.dispose();
-  }
-
-  void _updateMarkers(List<DeliveryLocation> locations) {
-    setState(() {
-      _markers.clear();
-      for (final loc in locations) {
-        _markers.add(
-          Marker(
-            markerId: MarkerId(loc.orderId),
-            position: LatLng(loc.latitude, loc.longitude),
-            infoWindow: InfoWindow(
-              title: 'Order #${loc.orderId.substring(0, 8)}',
-              snippet: 'Rider: ${loc.riderId.substring(0, 8)}',
-            ),
-            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
-            rotation: loc.heading ?? 0,
-          ),
-        );
-      }
-    });
-
-    // Optionally fit bounds if there are markers
-    if (_markers.isNotEmpty && _mapController != null) {
-      _fitBounds(locations);
-    }
   }
 
   void _fitBounds(List<DeliveryLocation> locations) {
@@ -84,13 +51,13 @@ class _AdminDeliveriesScreenState extends State<AdminDeliveriesScreen> {
       if (loc.longitude > maxLng) maxLng = loc.longitude;
     }
 
-    _mapController?.animateCamera(
-      CameraUpdate.newLatLngBounds(
-        LatLngBounds(
-          southwest: LatLng(minLat, minLng),
-          northeast: LatLng(maxLat, maxLng),
+    _mapController.fitCamera(
+      CameraFit.bounds(
+        bounds: LatLngBounds(
+          LatLng(minLat, minLng),
+          LatLng(maxLat, maxLng),
         ),
-        50, // padding
+        padding: const EdgeInsets.all(50),
       ),
     );
   }
@@ -111,30 +78,46 @@ class _AdminDeliveriesScreenState extends State<AdminDeliveriesScreen> {
       ),
       body: Consumer<TrackingProvider>(
         builder: (context, provider, child) {
-          // React to changes in active deliveries
-          if (provider.activeDeliveries.length != _markers.length ||
-              provider.activeDeliveries.any((d) => !_markers.any((m) => m.markerId.value == d.orderId && (m.position.latitude != d.latitude || m.position.longitude != d.longitude)))) {
-              // This check is a bit simplistic, but effectively we want to update markers whenever the list changes.
-              // Better to just update markers every build if the list changed.
-              // Since build is called on notifyListeners, we can update logic here or use a side effect.
-              // But updating state during build is bad.
-              // So we should just rely on the markers set constructed from provider data.
-              // Let's refactor _updateMarkers to returns markers instead of setting state, 
-              // or just build markers on the fly.
-          }
-          
           final markers = provider.activeDeliveries.map((loc) {
             return Marker(
-              markerId: MarkerId(loc.orderId),
-              position: LatLng(loc.latitude, loc.longitude),
-              infoWindow: InfoWindow(
-                title: 'Order #${loc.orderId.substring(0, 8)}',
-                snippet: 'Speed: ${(loc.speed ?? 0 * 3.6).toStringAsFixed(1)} km/h',
+              point: LatLng(loc.latitude, loc.longitude),
+              width: 40,
+              height: 40,
+              child: GestureDetector(
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: Text('Order #${loc.orderId.substring(0, 8)}'),
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Rider: ${loc.riderId.substring(0, 8)}'),
+                          Text('Speed: ${(loc.speed ?? 0 * 3.6).toStringAsFixed(1)} km/h'),
+                        ],
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: const Text('Close'),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+                child: Transform.rotate(
+                  angle: (loc.heading ?? 0) * (3.14159 / 180), // Convert deg to rad? No, Marker.rotate is not available in basic Marker, we rotate the child
+                  // Actually, heading is usually in degrees. Transform.rotate expects radians.
+                  child: const Icon(
+                    Icons.delivery_dining, // Using delivery icon instead of generic marker
+                    color: Colors.red,
+                    size: 40,
+                  ),
+                ),
               ),
-              icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-              rotation: loc.heading ?? 0,
             );
-          }).toSet();
+          }).toList();
 
           if (provider.isLoading && provider.activeDeliveries.isEmpty) {
             return const Center(child: CircularProgressIndicator());
@@ -144,19 +127,31 @@ class _AdminDeliveriesScreenState extends State<AdminDeliveriesScreen> {
             return Center(child: Text('Error: ${provider.error}'));
           }
 
-          return GoogleMap(
-            initialCameraPosition: _initialCameraPosition,
-            markers: markers,
-            onMapCreated: (controller) {
-              _mapController = controller;
-              if (provider.activeDeliveries.isNotEmpty) {
-                 // We can't easily call _fitBounds here without passing the list again 
-                 // or managing state. 
-                 // But typically the map starts, and if we have data we fit bounds.
-              }
-            },
-            myLocationEnabled: false,
-            mapToolbarEnabled: false,
+          // Auto-fit bounds when new data comes in? 
+          // Careful not to disrupt user interaction. 
+          // Maybe only once or on specific triggers.
+          // For now, let's leave it manual or on init.
+          // Actually, let's try to fit on first load of data
+          if (provider.activeDeliveries.isNotEmpty && _mapController.camera.zoom == _initialZoom) {
+             // _fitBounds(provider.activeDeliveries); 
+             // This might cause loop if zoom changes. 
+          }
+
+          return FlutterMap(
+            mapController: _mapController,
+            options: MapOptions(
+              initialCenter: _initialCenter,
+              initialZoom: _initialZoom,
+            ),
+            children: [
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.example.grocery_app',
+              ),
+              MarkerLayer(
+                markers: markers,
+              ),
+            ],
           );
         },
       ),

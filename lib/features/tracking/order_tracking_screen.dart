@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../shared/widgets/common_widgets.dart';
@@ -20,8 +21,8 @@ class OrderTrackingScreen extends StatefulWidget {
 }
 
 class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
-  GoogleMapController? _mapController;
-  Set<Marker> _markers = {};
+  final MapController _mapController = MapController();
+  List<Marker> _markers = [];
 
   @override
   void initState() {
@@ -40,25 +41,30 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
   void dispose() {
     final trackingProvider = context.read<TrackingProvider>();
     trackingProvider.stopTracking();
-    _mapController?.dispose();
+    _mapController.dispose();
     super.dispose();
   }
 
   void _updateMarker(double latitude, double longitude) {
     setState(() {
-      _markers = {
+      _markers = [
         Marker(
-          markerId: const MarkerId('rider_location'),
-          position: LatLng(latitude, longitude),
-          infoWindow: const InfoWindow(title: 'Rider Location'),
-          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+          point: LatLng(latitude, longitude),
+          width: 40,
+          height: 40,
+          child: const Icon(
+            Icons.delivery_dining,
+            color: AppColors.primaryGreen,
+            size: 40,
+          ),
         ),
-      };
+      ];
     });
 
     // Animate camera to new position
-    _mapController?.animateCamera(
-      CameraUpdate.newLatLng(LatLng(latitude, longitude)),
+    _mapController.move(
+      LatLng(latitude, longitude),
+      15.0,
     );
   }
 
@@ -70,34 +76,38 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
     final location = trackingProvider.currentLocation;
 
     // Update marker when location changes
-    if (location != null && _markers.isEmpty || 
-        (location != null && _markers.isNotEmpty && 
-         _markers.first.position.latitude != location.latitude)) {
+    if (location != null && (_markers.isEmpty || 
+        (_markers.isNotEmpty && 
+         _markers.first.point.latitude != location.latitude))) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _updateMarker(location.latitude, location.longitude);
       });
     }
 
     // Default camera position (Lahore) or current location if available
-    final initialPosition = CameraPosition(
-      target: location != null
-          ? LatLng(location.latitude, location.longitude)
-          : const LatLng(31.5204, 74.3587),
-      zoom: 14.4746,
-    );
+    final initialCenter = location != null
+        ? LatLng(location.latitude, location.longitude)
+        : const LatLng(31.5204, 74.3587);
 
     return Scaffold(
       body: Stack(
         children: [
           // Background Map
-          GoogleMap(
-            mapType: MapType.normal,
-            initialCameraPosition: initialPosition,
-            myLocationEnabled: false,
-            markers: _markers,
-            onMapCreated: (controller) {
-              _mapController = controller;
-            },
+          FlutterMap(
+            mapController: _mapController,
+            options: MapOptions(
+              initialCenter: initialCenter,
+              initialZoom: 14.5,
+            ),
+            children: [
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.example.grocery_app',
+              ),
+              MarkerLayer(
+                markers: _markers,
+              ),
+            ],
           ),
 
           // Loading overlay

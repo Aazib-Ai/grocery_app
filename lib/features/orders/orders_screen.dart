@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/config/supabase_config.dart';
 import '../../shared/widgets/empty_state_widget.dart';
+import '../../shared/widgets/skeleton_loader.dart';
+import '../../shared/widgets/custom_error_widget.dart';
 import '../../domain/entities/order.dart';
 import '../orders/providers/order_provider.dart';
 
@@ -79,33 +81,48 @@ class _OrdersScreenState extends State<OrdersScreen> {
       body: Consumer<OrderProvider>(
         builder: (context, orderProvider, child) {
           if (orderProvider.isLoading) {
-            return const Center(child: CircularProgressIndicator());
+            return ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: 5,
+              itemBuilder: (context, index) => Card(
+                margin: const EdgeInsets.only(bottom: 16),
+                elevation: 2,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: const [
+                           SkeletonLoader(width: 100, height: 20),
+                           SkeletonLoader(width: 80, height: 24, borderRadius: 20),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                       const SkeletonLoader(width: 150, height: 16),
+                      const SizedBox(height: 8),
+                       const SkeletonLoader(width: 100, height: 16),
+                       const Divider(height: 24),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: const [
+                           SkeletonLoader(width: 60, height: 20),
+                           SkeletonLoader(width: 80, height: 24),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
           }
 
           if (orderProvider.error != null) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Error loading orders',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    orderProvider.error!,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.grey),
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: _fetchOrders,
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
+            return CustomErrorWidget(
+              message: orderProvider.error!,
+              onRetry: _fetchOrders,
             );
           }
 

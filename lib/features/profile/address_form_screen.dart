@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:geocoding/geocoding.dart' as geocoding;
+import 'package:go_router/go_router.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../domain/entities/address.dart';
@@ -22,6 +26,11 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
   late TextEditingController _cityController;
   late TextEditingController _postalCodeController;
   bool _isDefault = false;
+  
+  // Map related
+  final MapController _mapController = MapController();
+  LatLng _selectedLocation = const LatLng(31.5204, 74.3587); // Default to Lahore
+  bool _showMap = false;
 
   @override
   void initState() {
@@ -33,6 +42,11 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
     _cityController = TextEditingController(text: address?.city ?? '');
     _postalCodeController = TextEditingController(text: address?.postalCode ?? '');
     _isDefault = address?.isDefault ?? false;
+    
+    // If editing and has coordinates, use them
+    if (address?.latitude != null && address?.longitude != null) {
+      _selectedLocation = LatLng(address!.latitude!, address.longitude!);
+    }
   }
 
   @override
@@ -68,8 +82,8 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
       addressLine2: _addressLine2Controller.text.trim().isEmpty ? null : _addressLine2Controller.text.trim(),
       city: _cityController.text.trim(),
       postalCode: _postalCodeController.text.trim().isEmpty ? null : _postalCodeController.text.trim(),
-      latitude: null,
-      longitude: null,
+      latitude: _selectedLocation.latitude,
+      longitude: _selectedLocation.longitude,
       isDefault: _isDefault,
       createdAt: widget.address?.createdAt ?? DateTime.now(),
     );
@@ -91,7 +105,7 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
             backgroundColor: Colors.green,
           ),
         );
-        Navigator.pop(context);
+        context.pop();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -103,9 +117,94 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
     }
   }
 
+  void _openMapPicker() {
+    setState(() {
+      _showMap = true;
+    });
+  }
+
+  void _closeMapPicker() {
+    setState(() {
+      _showMap = false;
+    });
+  }
+  
+  bool _isLoadingAddress = false;
+  
+  Future<void> _confirmLocationAndFillAddress() async {
+    setState(() {
+      _isLoadingAddress = true;
+    });
+    
+    try {
+      // Perform reverse geocoding to get address from coordinates
+      final placemarks = await geocoding.placemarkFromCoordinates(
+        _selectedLocation.latitude,
+        _selectedLocation.longitude,
+      );
+      
+      if (placemarks.isNotEmpty) {
+        final place = placemarks.first;
+        
+        // Build address line 1 from street, subLocality, etc.
+        final addressParts = <String>[
+          if (place.street != null && place.street!.isNotEmpty) place.street!,
+          if (place.subLocality != null && place.subLocality!.isNotEmpty) place.subLocality!,
+          if (place.locality != null && place.locality!.isNotEmpty && place.locality != place.subLocality) place.locality!,
+        ];
+        
+        setState(() {
+          // Fill address line 1 with street and area info
+          if (addressParts.isNotEmpty) {
+            _addressLine1Controller.text = addressParts.join(', ');
+          }
+          
+          // Fill address line 2 with additional area info if available
+          if (place.subAdministrativeArea != null && place.subAdministrativeArea!.isNotEmpty) {
+            _addressLine2Controller.text = place.subAdministrativeArea!;
+          }
+          
+          // Fill city
+          if (place.locality != null && place.locality!.isNotEmpty) {
+            _cityController.text = place.locality!;
+          } else if (place.administrativeArea != null && place.administrativeArea!.isNotEmpty) {
+            _cityController.text = place.administrativeArea!;
+          }
+          
+          // Fill postal code
+          if (place.postalCode != null && place.postalCode!.isNotEmpty) {
+            _postalCodeController.text = place.postalCode!;
+          }
+        });
+      }
+    } catch (e) {
+      // If geocoding fails, just close the map without filling fields
+      debugPrint('Reverse geocoding failed: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not get address details. Please fill manually.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingAddress = false;
+          _showMap = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.address != null;
+
+    if (_showMap) {
+      return _buildMapPickerScreen();
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF6F6F9),
@@ -117,7 +216,7 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
         foregroundColor: Colors.black,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => context.pop(),
         ),
       ),
       body: Consumer<ProfileProvider>(
@@ -129,6 +228,82 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Map preview / Location picker
+                  const Text("Location", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                  const SizedBox(height: 16),
+                  
+                  GestureDetector(
+                    onTap: _openMapPicker,
+                    child: Container(
+                      height: 180,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: Stack(
+                          children: [
+                            FlutterMap(
+                              options: MapOptions(
+                                initialCenter: _selectedLocation,
+                                initialZoom: 15,
+                                interactionOptions: const InteractionOptions(
+                                  flags: InteractiveFlag.none, // Disable interaction in preview
+                                ),
+                              ),
+                              children: [
+                                TileLayer(
+                                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                                  userAgentPackageName: 'com.example.grocery_app',
+                                ),
+                                MarkerLayer(
+                                  markers: [
+                                    Marker(
+                                      point: _selectedLocation,
+                                      width: 40,
+                                      height: 40,
+                                      child: const Icon(
+                                        Icons.location_pin,
+                                        color: Colors.red,
+                                        size: 40,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.3),
+                              ),
+                              child: const Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.touch_app, color: Colors.white, size: 32),
+                                    SizedBox(height: 8),
+                                    Text(
+                                      'Tap to select location',
+                                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 8),
+                  Text(
+                    'Lat: ${_selectedLocation.latitude.toStringAsFixed(4)}, Lng: ${_selectedLocation.longitude.toStringAsFixed(4)}',
+                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                  ),
+                  
+                  const SizedBox(height: 24),
                   const Text("Address Details", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                   const SizedBox(height: 16),
 
@@ -218,7 +393,7 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
                         if (isEditing) ...[
                           const SizedBox(height: 16),
                           OutlinedButton(
-                            onPressed: () => Navigator.pop(context),
+                            onPressed: () => context.pop(),
                             style: OutlinedButton.styleFrom(
                               minimumSize: const Size(double.infinity, 50),
                               shape: RoundedRectangleBorder(
@@ -239,6 +414,134 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildMapPickerScreen() {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Select Location'),
+        backgroundColor: AppColors.primaryGreen,
+        foregroundColor: Colors.white,
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: _closeMapPicker,
+        ),
+        actions: [
+          _isLoadingAddress
+              ? const Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  ),
+                )
+              : TextButton(
+                  onPressed: _confirmLocationAndFillAddress,
+                  child: const Text('Confirm', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
+        ],
+      ),
+      body: Stack(
+        children: [
+          FlutterMap(
+            mapController: _mapController,
+            options: MapOptions(
+              initialCenter: _selectedLocation,
+              initialZoom: 15,
+              onTap: (tapPosition, latlng) {
+                setState(() {
+                  _selectedLocation = latlng;
+                });
+              },
+            ),
+            children: [
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.example.grocery_app',
+              ),
+              MarkerLayer(
+                markers: [
+                  Marker(
+                    point: _selectedLocation,
+                    width: 50,
+                    height: 50,
+                    child: const Icon(
+                      Icons.location_pin,
+                      color: Colors.red,
+                      size: 50,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          // Crosshair in center
+          const Center(
+            child: IgnorePointer(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.keyboard_arrow_up, size: 30, color: Colors.black54),
+                  Icon(Icons.circle, size: 12, color: Colors.black54),
+                  Icon(Icons.keyboard_arrow_down, size: 30, color: Colors.black54),
+                ],
+              ),
+            ),
+          ),
+          // Location info at bottom
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, -5),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.location_pin, color: Colors.red),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('Selected Location', style: TextStyle(fontWeight: FontWeight.bold)),
+                            Text(
+                              'Lat: ${_selectedLocation.latitude.toStringAsFixed(6)}, Lng: ${_selectedLocation.longitude.toStringAsFixed(6)}',
+                              style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Tap anywhere on the map to select a location',
+                    style: TextStyle(color: Colors.grey, fontSize: 12),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

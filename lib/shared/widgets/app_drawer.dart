@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import '../../core/auth/auth_provider.dart';
 import '../../core/theme/app_colors.dart';
 
 class AppDrawer extends StatelessWidget {
@@ -7,6 +9,9 @@ class AppDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = context.watch<AuthProvider>();
+    final isAdmin = authProvider.currentUserRole?.isAdmin ?? false;
+
     return Drawer(
       backgroundColor: AppColors.primaryGreen,
       child: Padding(
@@ -16,6 +21,15 @@ class AppDrawer extends StatelessWidget {
           children: [
              // Spacing for status bar
              const SizedBox(height: 40),
+             
+             // Admin Dashboard - only visible for admins
+             if (isAdmin) ...[
+               _buildDrawerItem(context, Icons.admin_panel_settings, "Admin Dashboard", () {
+                 Navigator.pop(context);
+                 context.go('/admin');
+               }),
+               const Divider(color: Colors.white30),
+             ],
              
              _buildDrawerItem(context, Icons.person_outline, "Profile", () {
                Navigator.pop(context); // Close drawer

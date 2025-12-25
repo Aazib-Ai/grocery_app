@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../shared/widgets/custom_button.dart';
@@ -45,10 +46,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         foregroundColor: Colors.black,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
+        automaticallyImplyLeading: false, // No back button for bottom nav screens
       ),
       body: Consumer<FavoritesProvider>(
         builder: (context, favoritesProvider, child) {
@@ -100,10 +98,10 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             return Center(
               child: EmptyStateWidget(
                 icon: Icons.favorite_border,
-                message: 'No favorites yet',
-                description: 'Start adding products to your favorites!',
-                actionText: 'Browse Products',
-                onAction: () => Navigator.pop(context),
+                title: 'No favorites yet',
+                message: 'Start adding products to your favorites!',
+                buttonText: 'Browse Products',
+                onButtonPressed: () => context.go('/home'),
               ),
             );
           }

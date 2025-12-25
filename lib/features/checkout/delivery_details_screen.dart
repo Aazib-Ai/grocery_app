@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../data/repositories/mock_repository.dart';
+import '../../../../core/auth/auth_provider.dart';
+import 'package:provider/provider.dart';
 import '../../../../shared/widgets/common_widgets.dart';
 import '../../../../shared/widgets/custom_button.dart';
 import 'widgets/selection_tile.dart';
@@ -18,7 +19,7 @@ class _DeliveryDetailsScreenState extends State<DeliveryDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = MockRepository.getUserProfile();
+
 
     return Scaffold(
       appBar: AppBar(
@@ -61,21 +62,34 @@ class _DeliveryDetailsScreenState extends State<DeliveryDetailsScreen> {
                 )
               ],
             ),
-            InfoCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    user.name,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                  const Divider(),
-                  Text(user.address, style: const TextStyle(color: Colors.grey)),
-                  const Divider(),
-                  Text(user.phone, style: const TextStyle(color: Colors.grey)),
-                ],
-              ),
-            ),
+          Consumer<AuthProvider>(
+            builder: (context, auth, _) {
+              final user = auth.currentUser;
+              // Fallback data if user attributes are missing (Supabase user metadata might be used for name/phone)
+              final name = user?.userMetadata?['name'] ?? 'Guest';
+              final phone = user?.phone ?? 'No phone'; 
+              
+              // Address would realistically come from a separate table or metadata. 
+              // For now, we'll use a placeholder or check metadata.
+              final address = user?.userMetadata?['address'] ?? 'No address set';
+
+              return InfoCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                    const Divider(),
+                    Text(address, style: const TextStyle(color: Colors.grey)),
+                    const Divider(),
+                    Text(phone, style: const TextStyle(color: Colors.grey)),
+                  ],
+                ),
+              );
+            },
+          ),
             const SizedBox(height: 30),
             const Text(
               "Delivery method.",

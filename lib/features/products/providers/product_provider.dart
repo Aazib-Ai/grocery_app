@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../../../domain/entities/product.dart';
 import '../../../domain/repositories/product_repository.dart';
-import '../services/search_service.dart';
+import '../../search/services/search_service.dart';
 import '../../../core/realtime/realtime_service.dart';
 
 

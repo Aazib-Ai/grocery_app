@@ -45,7 +45,7 @@ class _AdminProductsScreenState extends State<AdminProductsScreen> {
     if (_searchQuery.isNotEmpty) {
       products = products.where((product) {
         return product.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-            product.description
+            (product.description ?? '')
                 .toLowerCase()
                 .contains(_searchQuery.toLowerCase());
       }).toList();
@@ -164,12 +164,12 @@ class _AdminProductsScreenState extends State<AdminProductsScreen> {
                                 return Card(
                                   margin: const EdgeInsets.only(bottom: 12),
                                   child: ListTile(
-                                    leading: product.imageUrl.isNotEmpty
+                                    leading: (product.imageUrl ?? '').isNotEmpty
                                         ? ClipRRect(
                                             borderRadius:
                                                 BorderRadius.circular(8),
                                             child: Image.network(
-                                              product.imageUrl,
+                                              product.imageUrl!,
                                               width: 56,
                                               height: 56,
                                               fit: BoxFit.cover,

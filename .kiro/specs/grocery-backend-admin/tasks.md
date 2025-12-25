@@ -353,34 +353,34 @@
     - Update tracking_provider.dart with real-time location updates
     - _Requirements: 14.1, 14.2, 14.3_
 
-- [ ] 26. UI/UX improvements
-  - [ ] 26.1 Create loading and error widgets
+- [x] 26. UI/UX improvements
+  - [x] 26.1 Create loading and error widgets
     - Create lib/shared/widgets/skeleton_loader.dart
     - Create lib/shared/widgets/error_widget.dart with retry
     - Update lib/shared/widgets/empty_state_widget.dart
     - _Requirements: 15.2, 15.3_
-  - [ ] 26.2 Create splash screen
+  - [x] 26.2 Create splash screen
     - Create lib/features/splash/splash_screen.dart
     - Update router to start with splash screen
     - _Requirements: 15.1_
-  - [ ] 26.3 Improve existing screens with loading states
+  - [x] 26.3 Improve existing screens with loading states
     - Add skeleton loaders to all list screens
     - Add error handling with retry to all data-fetching screens
     - _Requirements: 15.2, 15.3, 15.4_
-  - [ ] 26.4 Ensure responsive layouts
+  - [x] 26.4 Ensure responsive layouts
     - Review and update all screens for tablet/different screen sizes
     - _Requirements: 15.5_
 
-- [ ] 27. Final integration and cleanup
-  - [ ] 27.1 Update routing with auth guards
+- [x] 27. Final integration and cleanup
+  - [x] 27.1 Update routing with auth guards
     - Update lib/main.dart router with role-based redirects
     - Add admin routes to router
     - _Requirements: 1.5, 1.6_
-  - [ ] 27.2 Remove mock repository
+  - [x] 27.2 Remove mock repository
     - Delete lib/data/repositories/mock_repository.dart
     - Ensure all screens use Supabase repositories
     - _Requirements: All_
-  - [ ] 27.3 Add environment configuration
+  - [x] 27.3 Add environment configuration
     - Create production and development environment configs
     - Document setup instructions in README
     - _Requirements: All_

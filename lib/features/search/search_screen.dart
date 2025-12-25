@@ -1,10 +1,13 @@
 import 'dart:async';
+import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../shared/widgets/empty_state_widget.dart';
 import '../../shared/widgets/product_card.dart';
-import '../providers/product_provider.dart';
+import '../products/providers/product_provider.dart'; // Fixed import again
+
+
 import '../../features/categories/providers/category_provider.dart';
 import 'services/search_service.dart';
 
@@ -218,7 +221,10 @@ class _SearchScreenState extends State<SearchScreen> {
           itemCount: provider.searchResults.length,
           itemBuilder: (context, index) {
             final product = provider.searchResults[index];
-            return ProductCard(product: product);
+            return ProductCard(
+              product: product,
+              onTap: () => GoRouter.of(context).push('/product/${product.id}'),
+            );
           },
         );
       },

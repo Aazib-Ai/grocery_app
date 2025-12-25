@@ -265,7 +265,61 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
     );
 
     if (success && context.mounted) {
-      context.go('/home');
+      // Show email verification dialog
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.email, color: AppColors.primaryGreen),
+              SizedBox(width: 8),
+              Text('Verify Your Email'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.mark_email_unread,
+                size: 64,
+                color: AppColors.primaryGreen,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'We\'ve sent a verification email to:\n$email',
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 16),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Please click the link in the email to verify your account, then come back and log in.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                // Switch to login tab
+                _tabController.animateTo(0);
+                // Clear signup form
+                _signupNameController.clear();
+                _signupEmailController.clear();
+                _signupPasswordController.clear();
+                // Pre-fill login email
+                _loginEmailController.text = email;
+              },
+              child: const Text(
+                'OK, I\'ll check my email',
+                style: TextStyle(color: AppColors.primaryGreen),
+              ),
+            ),
+          ],
+        ),
+      );
     }
   }
   

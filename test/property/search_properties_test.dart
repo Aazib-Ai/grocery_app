@@ -1,10 +1,12 @@
-import 'package:test/test.dart';
+import 'package:flutter_test/flutter_test.dart' hide test, group, expect, setUp, tearDown, setUpAll, tearDownAll;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:glados/glados.dart';
 import 'package:grocery_app/data/repositories/product_repository_impl.dart';
 import 'package:grocery_app/data/repositories/category_repository_impl.dart';
 import 'package:grocery_app/features/search/services/search_service.dart';
 import 'package:grocery_app/core/config/supabase_config.dart';
 import 'package:uuid/uuid.dart';
+import 'dart:io';
 
 void main() {
   late ProductRepositoryImpl productRepository;
@@ -13,6 +15,9 @@ void main() {
   final uuid = const Uuid();
 
   setUpAll(() async {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    SharedPreferences.setMockInitialValues({});
+    HttpOverrides.global = null;
     await SupabaseConfig.initialize();
     productRepository = ProductRepositoryImpl(SupabaseConfig.client);
     categoryRepository = CategoryRepositoryImpl(SupabaseConfig.client);

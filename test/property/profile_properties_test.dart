@@ -1,3 +1,5 @@
+import 'package:flutter_test/flutter_test.dart' hide test, group, expect, setUp, tearDown, setUpAll, tearDownAll;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:glados/glados.dart';
 import 'package:grocery_app/core/config/supabase_config.dart';
 import 'package:grocery_app/data/models/address_model.dart';
@@ -6,6 +8,7 @@ import 'package:grocery_app/data/repositories/address_repository_impl.dart';
 import 'package:grocery_app/domain/entities/address.dart';
 import 'package:grocery_app/domain/repositories/address_repository.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dart:io';
 
 /// Property-Based Tests for Profile and Address Management
 /// 
@@ -18,6 +21,9 @@ void main() {
   late AddressRepository addressRepository;
 
   setUpAll(() async {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    SharedPreferences.setMockInitialValues({});
+    HttpOverrides.global = null;
     // Initialize Supabase for testing
     supabase = await SupabaseConfig.initialize();
     addressRepository = AddressRepositoryImpl(supabase);

@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:image_picker/image_picker.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/storage/image_storage_service.dart';
 import '../../../core/config/supabase_config.dart';
@@ -74,7 +74,7 @@ class _AdminProductFormScreenState extends State<AdminProductFormScreen> {
       setState(() {
         _product = product;
         _nameController.text = product.name;
-        _descriptionController.text = product.description;
+        _descriptionController.text = product.description ?? '';
         _priceController.text = product.price.toString();
         _stockController.text = product.stockQuantity.toString();
         _unitController.text = product.unit;

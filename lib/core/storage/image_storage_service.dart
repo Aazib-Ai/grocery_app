@@ -3,6 +3,9 @@ import 'package:uuid/uuid.dart';
 import 'package:path/path.dart' as path;
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:crypto/crypto.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:xml/xml.dart';
 import '../validators/image_validator.dart';
 import '../error/app_exception.dart';
 
@@ -23,39 +26,39 @@ abstract class ImageStorageService {
   String getPublicUrl(String path);
 }
 
-/// Implementation of ImageStorageService using Cloudflare R2 via Supabase Edge Functions
+/// Implementation of ImageStorageService using Cloudflare R2 via Direct AWS SigV4
 class R2ImageStorageService implements ImageStorageService {
-  final String supabaseUrl;
-  final String supabaseAnonKey;
   final ImageValidator validator;
   final Uuid uuid;
-
-  // Supabase Edge Function endpoint for R2 operations
-  // TODO: Deploy this edge function to your Supabase project
-  static const String edgeFunctionName = 'r2-upload';
+  final String? accountId;
+  final String? accessKeyId;
+  final String? secretAccessKey;
+  final String? bucketName;
 
   R2ImageStorageService({
-    required this.supabaseUrl,
-    required this.supabaseAnonKey,
     ImageValidator? validator,
     Uuid? uuid,
   })  : validator = validator ?? ImageValidator(),
-        uuid = uuid ?? const Uuid();
+        uuid = uuid ?? const Uuid(),
+        accountId = dotenv.env['R2_ACCOUNT_ID'],
+        accessKeyId = dotenv.env['R2_ACCESS_KEY_ID'],
+        secretAccessKey = dotenv.env['R2_SECRET_ACCESS_KEY'],
+        bucketName = dotenv.env['R2_BUCKET_NAME'];
 
   /// Uploads a product image to R2
   @override
   Future<String> uploadProductImage(File file, String productId) async {
-    return _uploadImage(file, 'products', productId);
+    return _uploadDirectToR2(file, 'products', productId);
   }
 
   /// Uploads a user avatar to R2
   @override
   Future<String> uploadUserAvatar(File file, String userId) async {
-    return _uploadImage(file, 'avatars', userId);
+    return _uploadDirectToR2(file, 'avatars', userId);
   }
 
-  /// Internal method to handle image upload
-  Future<String> _uploadImage(File file, String bucket, String entityId) async {
+  /// Internal method to handle direct R2 upload using AWS Ref4
+  Future<String> _uploadDirectToR2(File file, String folder, String entityId) async {
     // Validate the image
     final validationResult = validator.validate(file);
     if (!validationResult.isValid) {
@@ -64,107 +67,209 @@ class R2ImageStorageService implements ImageStorageService {
       );
     }
 
+    if (accountId == null || accessKeyId == null || secretAccessKey == null || bucketName == null) {
+      throw StorageException('R2 credentials are not configured in .env');
+    }
+
     try {
-      // Generate unique filename
       final extension = path.extension(file.path);
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final uniqueId = uuid.v4();
-      final filename = '${entityId}_${timestamp}_$uniqueId$extension';
-      final filePath = '$bucket/$filename';
+      final objectKey = '$folder/${entityId}_${timestamp}_$uniqueId$extension';
+      final fileBytes = await file.readAsBytes();
+      final contentSha256 = sha256.convert(fileBytes).toString();
+      final date = DateTime.now().toUtc(); // Use UTC for signing
 
-      // Read file as bytes
-      final bytes = await file.readAsBytes();
-      final base64Image = base64Encode(bytes);
+      final endpoint = 'https://$accountId.r2.cloudflarestorage.com/$bucketName/$objectKey';
+      
+      // We will perform a PUT request
+      final method = 'PUT';
+      final service = 's3';
+      final region = 'auto';
+      final contentType = _getContentType(extension);
 
-      // Call Supabase Edge Function to upload to R2
-      final uri = Uri.parse('$supabaseUrl/functions/v1/$edgeFunctionName');
-      final response = await http.post(
-        uri,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $supabaseAnonKey',
-        },
-        body: jsonEncode({
-          'action': 'upload',
-          'path': filePath,
-          'data': base64Image,
-          'contentType': _getContentType(extension),
-        }),
+      // --- AWS Signature V4 Logic ---
+      
+      // 1. Canonical Request
+      final amzDate = _formatAmzDate(date);
+      final dateStamp = _formatDateStamp(date);
+      
+      // Headers must be sorted
+      final canonicalUri = '/$bucketName/$objectKey';
+      final canonicalQueryString = '';
+      
+      // Headers to sign
+      final host = '$accountId.r2.cloudflarestorage.com';
+      final canonicalHeaders = 
+        'host:$host\n'
+        'x-amz-content-sha256:$contentSha256\n'
+        'x-amz-date:$amzDate\n';
+        
+      final signedHeaders = 'host;x-amz-content-sha256;x-amz-date';
+      
+      final canonicalRequest = 
+        '$method\n'
+        '$canonicalUri\n'
+        '$canonicalQueryString\n'
+        '$canonicalHeaders\n'
+        '$signedHeaders\n'
+        '$contentSha256';
+
+      // 2. String to Sign
+      final algorithm = 'AWS4-HMAC-SHA256';
+      final credentialScope = '$dateStamp/$region/$service/aws4_request';
+      final stringToSign = 
+        '$algorithm\n'
+        '$amzDate\n'
+        '$credentialScope\n'
+        '${sha256.convert(utf8.encode(canonicalRequest))}';
+      
+      // 3. Signature
+      final signingKey = _getSignatureKey(secretAccessKey!, dateStamp, region, service);
+      final signature = Hmac(sha256, signingKey).convert(utf8.encode(stringToSign)).toString();
+      
+      // 4. Authorization Header
+      final authorization = 
+        '$algorithm Credential=$accessKeyId/$credentialScope, '
+        'SignedHeaders=$signedHeaders, '
+        'Signature=$signature';
+        
+      final headers = {
+        'Authorization': authorization,
+        'x-amz-date': amzDate,
+        'x-amz-content-sha256': contentSha256,
+        'Content-Type': contentType,
+        'Content-Length': fileBytes.length.toString(),
+      };
+
+      final response = await http.put(
+        Uri.parse(endpoint),
+        headers: headers,
+        body: fileBytes,
       );
 
       if (response.statusCode != 200) {
+        // Try to parse error from XML
+        String errorMessage = response.body;
+        try {
+          final document = XmlDocument.parse(response.body);
+          final message = document.findAllElements('Message').firstOrNull?.text;
+          final code = document.findAllElements('Code').firstOrNull?.text;
+          if (message != null) errorMessage = '$code: $message';
+        } catch (_) {}
+
         throw StorageException(
-          'Failed to upload image: ${response.body}',
+          'Failed to upload image: $errorMessage',
           code: response.statusCode.toString(),
         );
       }
 
-      // Parse response to get public URL
-      final responseData = jsonDecode(response.body) as Map<String, dynamic>;
-      final publicUrl = responseData['url'] as String?;
-
-      if (publicUrl == null) {
-        throw StorageException('No URL returned from upload');
-      }
-
-      return publicUrl;
-    } on ValidationException {
-      rethrow;
-    } on StorageException {
-      rethrow;
+      // Return the public URL
+      final publicDomain = dotenv.env['R2_PUBLIC_DOMAIN'] ?? 'https://pub-$accountId.r2.dev';
+      return '$publicDomain/$objectKey';
+      
     } on SocketException catch (e) {
       throw NetworkException('Network error during upload: ${e.message}');
     } catch (e) {
+       if (e is StorageException || e is ValidationException) rethrow;
       throw StorageException('Unexpected error during upload: $e');
     }
   }
 
-  /// Deletes an image from R2 storage
   @override
   Future<void> deleteImage(String url) async {
+     if (accountId == null || accessKeyId == null || secretAccessKey == null || bucketName == null) {
+      throw StorageException('R2 credentials are not configured');
+    }
+
     try {
-      // Extract path from URL
+      // Extract object key from URL
       final uri = Uri.parse(url);
-      final path = uri.path;
+      final objectKey = uri.path.substring(1); // Remove leading slash
 
-      // Call Supabase Edge Function to delete from R2
-      final edgeUri = Uri.parse('$supabaseUrl/functions/v1/$edgeFunctionName');
-      final response = await http.post(
-        edgeUri,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $supabaseAnonKey',
-        },
-        body: jsonEncode({
-          'action': 'delete',
-          'path': path,
-        }),
-      );
-
-      if (response.statusCode != 200) {
-        throw StorageException(
-          'Failed to delete image: ${response.body}',
-          code: response.statusCode.toString(),
-        );
+      final date = DateTime.now().toUtc();
+      final endpoint = 'https://$accountId.r2.cloudflarestorage.com/$bucketName/$objectKey';
+      
+      // DELETE
+      final method = 'DELETE';
+      final service = 's3';
+      final region = 'auto';
+      
+      final emptyHash = sha256.convert(utf8.encode('')).toString(); // Empty body
+      final amzDate = _formatAmzDate(date);
+      final dateStamp = _formatDateStamp(date);
+      
+      final canonicalUri = '/$bucketName/$objectKey';
+      final host = '$accountId.r2.cloudflarestorage.com';
+      
+       final canonicalHeaders = 
+        'host:$host\n'
+        'x-amz-content-sha256:$emptyHash\n'
+        'x-amz-date:$amzDate\n';
+        
+      final signedHeaders = 'host;x-amz-content-sha256;x-amz-date';
+      
+      final canonicalRequest = 
+        '$method\n'
+        '$canonicalUri\n'
+        '\n' // Query string
+        '$canonicalHeaders\n'
+        '$signedHeaders\n'
+        '$emptyHash';
+        
+      final algorithm = 'AWS4-HMAC-SHA256';
+      final credentialScope = '$dateStamp/$region/$service/aws4_request';
+      final stringToSign = 
+        '$algorithm\n'
+        '$amzDate\n'
+        '$credentialScope\n'
+        '${sha256.convert(utf8.encode(canonicalRequest))}';
+      
+      final signingKey = _getSignatureKey(secretAccessKey!, dateStamp, region, service);
+      final signature = Hmac(sha256, signingKey).convert(utf8.encode(stringToSign)).toString();
+      
+      final authorization = 
+        '$algorithm Credential=$accessKeyId/$credentialScope, '
+        'SignedHeaders=$signedHeaders, '
+        'Signature=$signature';
+        
+      final headers = {
+        'Authorization': authorization,
+        'x-amz-date': amzDate,
+        'x-amz-content-sha256': emptyHash,
+      };
+      
+      final response = await http.delete(Uri.parse(endpoint), headers: headers);
+      
+      if (response.statusCode != 204 && response.statusCode != 200) {
+         throw StorageException('Failed to delete image. Code: ${response.statusCode}');
       }
-    } on StorageException {
-      rethrow;
-    } on SocketException catch (e) {
-      throw NetworkException('Network error during deletion: ${e.message}');
+
     } catch (e) {
+      if (e is StorageException) rethrow;
       throw StorageException('Unexpected error during deletion: $e');
     }
   }
 
-  /// Gets public URL for a storage path
   @override
   String getPublicUrl(String path) {
-    // TODO: Update this with your actual R2 public URL format
-    // This is a placeholder - actual URL depends on R2 configuration
-    return 'https://your-r2-bucket.r2.cloudflarestorage.com/$path';
+     final publicDomain = dotenv.env['R2_PUBLIC_DOMAIN'] ?? '';
+     if (publicDomain.isNotEmpty) {
+       return '$publicDomain/$path';
+     }
+     return path;
   }
 
-  /// Gets content type from file extension
+  // --- Helpers ---
+
+  String _formatAmzDate(DateTime date) {
+    return date.toIso8601String().replaceAll('-', '').replaceAll(':', '').split('.').first + 'Z';
+  }
+
+  String _formatDateStamp(DateTime date) {
+    return date.toIso8601String().split('T').first.replaceAll('-', '');
+  }
+
   String _getContentType(String extension) {
     switch (extension.toLowerCase()) {
       case '.jpg':
@@ -178,9 +283,17 @@ class R2ImageStorageService implements ImageStorageService {
         return 'application/octet-stream';
     }
   }
+  
+  List<int> _getSignatureKey(String key, String dateStamp, String regionName, String serviceName) {
+    final kDate = Hmac(sha256, utf8.encode('AWS4$key')).convert(utf8.encode(dateStamp)).bytes;
+    final kRegion = Hmac(sha256, kDate).convert(utf8.encode(regionName)).bytes;
+    final kService = Hmac(sha256, kRegion).convert(utf8.encode(serviceName)).bytes;
+    final kSigning = Hmac(sha256, kService).convert(utf8.encode('aws4_request')).bytes;
+    return kSigning;
+  }
 }
 
-/// Mock implementation for testing without R2
+/// Mock implementation for testing
 class MockImageStorageService implements ImageStorageService {
   final ImageValidator validator;
   final Map<String, String> _uploadedImages = {};
@@ -200,22 +313,17 @@ class MockImageStorageService implements ImageStorageService {
   }
 
   Future<String> _uploadImage(File file, String bucket, String entityId) async {
-    // Validate the image
     final validationResult = validator.validate(file);
     if (!validationResult.isValid) {
       throw ValidationException(
         validationResult.errorMessage ?? 'Image validation failed',
       );
     }
-
-    // Simulate upload delay
     await Future.delayed(const Duration(milliseconds: 100));
-
     _uploadCount++;
     final extension = path.extension(file.path);
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final url = 'https://mock-r2.example.com/$bucket/${entityId}_${timestamp}_$_uploadCount$extension';
-    
     _uploadedImages[url] = file.path;
     return url;
   }
@@ -229,17 +337,5 @@ class MockImageStorageService implements ImageStorageService {
   @override
   String getPublicUrl(String path) {
     return 'https://mock-r2.example.com/$path';
-  }
-
-  /// Test helper: Check if URL was uploaded
-  bool wasUploaded(String url) => _uploadedImages.containsKey(url);
-
-  /// Test helper: Get all uploaded URLs
-  List<String> get uploadedUrls => _uploadedImages.keys.toList();
-
-  /// Test helper: Clear all uploads
-  void clearUploads() {
-    _uploadedImages.clear();
-    _uploadCount = 0;
   }
 }

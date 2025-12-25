@@ -1,12 +1,20 @@
-import 'package:test/test.dart';
+import 'package:flutter_test/flutter_test.dart' hide test, group, expect, setUp, tearDown, setUpAll, tearDownAll;
 import 'package:glados/glados.dart';
 import 'package:grocery_app/domain/entities/delivery_location.dart';
 import 'package:grocery_app/data/repositories/tracking_repository_impl.dart';
 import 'package:grocery_app/data/models/delivery_location_model.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:grocery_app/core/config/supabase_config.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:io';
 
 void main() {
+  setUpAll(() async {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    SharedPreferences.setMockInitialValues({});
+    HttpOverrides.global = null;
+  });
+
   test('Property 22: Active Deliveries Query', () async {
     // This test verifies that getActiveDeliveryLocations returns correct data
     // It requires a running Supabase instance and configured environment
@@ -70,7 +78,7 @@ void main() {
   });
 
   // Glados property test for pure logic or model
-  Glados<DeliveryLocationModel>().test('DeliveryLocationModel round trip', (model) {
+  Glados(any.deliveryLocationModel).test('DeliveryLocationModel round trip', (model) {
       final json = model.toJson();
       final fromJson = DeliveryLocationModel.fromJson(json);
 

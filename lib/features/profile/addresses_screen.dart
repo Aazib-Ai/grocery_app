@@ -33,7 +33,7 @@ class _AddressesScreenState extends State<AddressesScreen> {
         foregroundColor: Colors.black,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => context.pop(),
         ),
       ),
       body: Consumer<ProfileProvider>(

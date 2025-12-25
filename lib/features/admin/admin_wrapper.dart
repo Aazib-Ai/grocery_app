@@ -26,6 +26,18 @@ class AdminWrapper extends StatelessWidget {
         backgroundColor: AppColors.primaryGreen,
         foregroundColor: Colors.white,
         actions: [
+          // Dashboard/Home button - quick access back to main admin page
+          IconButton(
+            icon: const Icon(Icons.dashboard),
+            onPressed: () => context.go('/admin'),
+            tooltip: 'Dashboard',
+          ),
+          // Back to customer store
+          IconButton(
+            icon: const Icon(Icons.storefront),
+            onPressed: () => context.go('/home'),
+            tooltip: 'Back to Store',
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {

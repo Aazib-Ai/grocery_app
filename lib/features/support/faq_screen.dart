@@ -1,13 +1,34 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
-import '../../data/repositories/mock_repository.dart';
+
 
 class FAQScreen extends StatelessWidget {
   const FAQScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final faqs = MockRepository.getFAQs();
+    final faqs = [
+      {
+        "question": "How can I place an order on Ali Mart?",
+        "answer": "You can place an order by selecting items and proceeding to checkout."
+      },
+      {
+        "question": "How long does delivery take?",
+        "answer": "Delivery usually takes 30-45 minutes depending on your location."
+      },
+      {
+        "question": "Can I cancel or modify my order?",
+        "answer": "Yes, you can cancel before the rider picks up your order."
+      },
+       {
+        "question": "How can I track my order?",
+        "answer": "You can track your order in real-time from the Tracking screen."
+      },
+       {
+        "question": "How do I contact customer support?",
+        "answer": "You use the Help & Support form to contact us directly."
+      },
+    ];
 
     return Scaffold(
       appBar: AppBar(

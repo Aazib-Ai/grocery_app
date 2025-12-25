@@ -1,4 +1,5 @@
-import 'package:test/test.dart';
+import 'package:flutter_test/flutter_test.dart' hide test, group, expect, setUp, tearDown, setUpAll, tearDownAll;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:glados/glados.dart';
 import 'package:grocery_app/data/repositories/rider_repository_impl.dart';
 import 'package:grocery_app/data/repositories/order_repository_impl.dart';
@@ -8,6 +9,7 @@ import 'package:grocery_app/domain/repositories/order_repository.dart';
 import 'package:grocery_app/domain/entities/order.dart';
 import 'package:grocery_app/core/config/supabase_config.dart';
 import 'package:uuid/uuid.dart';
+import 'dart:io';
 
 /// Property-based tests for rider management
 /// 
@@ -22,6 +24,9 @@ void main() {
   final uuid = const Uuid();
 
   setUpAll(() async {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    SharedPreferences.setMockInitialValues({});
+    HttpOverrides.global = null;
     // Initialize Supabase for testing
     await SupabaseConfig.initialize();
     riderRepository = RiderRepositoryImpl(SupabaseConfig.client);

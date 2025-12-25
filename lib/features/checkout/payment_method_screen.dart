@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/config/supabase_config.dart';
-import '../../../../shared/widgets/common_widgets.dart';
-import '../../../../shared/widgets/custom_button.dart';
-import '../../../cart/providers/cart_provider.dart';
-import '../../orders/providers/order_provider.dart';
-import '../../../../domain/repositories/order_repository.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/config/supabase_config.dart';
+import '../../shared/widgets/common_widgets.dart';
+import '../../shared/widgets/custom_button.dart';
+import '../cart/providers/cart_provider.dart';
+import '../orders/providers/order_provider.dart';
+import '../../domain/repositories/order_repository.dart';
 import 'widgets/selection_tile.dart';
 
 class PaymentMethodScreen extends StatefulWidget {
@@ -204,7 +204,7 @@ class _CheckoutNoteModalState extends State<CheckoutNoteModal> {
       }
 
       // Get cart items
-      final cartItems = cartProvider.items;
+      final cartItems = cartProvider.cartItems;
       if (cartItems.isEmpty) {
         throw Exception('Cart is empty');
       }

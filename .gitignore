@@ -44,4 +44,92 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Environment variables
+# Environment variables - IMPORTANT: Never commit secrets!
+.env
+.env.local
+.env.development
+.env.staging
+.env.production
+.env*.local
+*.env
+
+# Keep example env file
+!.env.example
+
+# Secret keys and credentials
+*.jks
+*.keystore
+key.properties
+google-services.json
+GoogleService-Info.plist
+firebase_options.dart
+
+# Local configuration
+local.properties
+
+# Generated files
+*.g.dart
+*.freezed.dart
+*.mocks.dart
+lib/generated_plugin_registrant.dart
+
+# Test coverage
+coverage/
+*.lcov
+
+# OS-specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Windows specific
+*.lnk
+
+# Linux specific
+*~
+
+# Logs and crash reports
+*.log
+crash_log*.txt
+flutter_*.log
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Package manager locks (optional - some teams prefer to commit these)
+# pubspec.lock
+
+# Android specific
+/android/.gradle/
+/android/captures/
+/android/local.properties
+/android/**/GeneratedPluginRegistrant.java
+/android/key.properties
+/android/**/*.keystore
+/android/app/google-services.json
+
+# iOS specific
+/ios/.symlinks/
+/ios/Pods/
+/ios/Flutter/Flutter.framework
+/ios/Flutter/Flutter.podspec
+/ios/Flutter/Generated.xcconfig
+/ios/Flutter/app.flx
+/ios/Flutter/app.zip
+/ios/Flutter/flutter_assets/
+/ios/ServiceDefinitions.json
+/ios/Runner/GeneratedPluginRegistrant.*
+/ios/Runner/GoogleService-Info.plist
+*.xcuserstate
+
+# Web specific
+/web/favicon.png

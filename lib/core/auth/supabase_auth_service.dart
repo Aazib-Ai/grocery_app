@@ -1,4 +1,4 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 import '../error/app_exception.dart';
 import 'auth_service.dart';
 import 'auth_state.dart';
@@ -6,12 +6,12 @@ import 'user_role.dart';
 
 /// Supabase implementation of AuthService
 class SupabaseAuthService implements AuthService {
-  final SupabaseClient _client;
+  final sb.SupabaseClient _client;
 
   SupabaseAuthService(this._client);
 
   @override
-  User? get currentUser => _client.auth.currentUser;
+  sb.User? get currentUser => _client.auth.currentUser;
 
   @override
   Stream<AuthState> get authStateChanges {
@@ -37,10 +37,11 @@ class SupabaseAuthService implements AuthService {
   }) async {
     try {
       // Sign up the user
+      // Note: Profile is automatically created by database trigger (handle_new_user)
       final response = await _client.auth.signUp(
         email: email,
         password: password,
-        data: {'name': name},
+        data: {'name': name}, // This is passed to the trigger via raw_user_meta_data
       );
 
       if (response.user == null) {
@@ -49,20 +50,12 @@ class SupabaseAuthService implements AuthService {
         );
       }
 
-      // Create profile in profiles table
-      await _client.from('profiles').insert({
-        'id': response.user!.id,
-        'name': name,
-        'role': 'customer',
-        'is_active': true,
-      });
-
       return AuthResult.success(message: 'Account created successfully');
-    } on AuthException catch (e) {
+    } on sb.AuthException catch (e) {
       return AuthResult.failure(
         AuthException(e.message, code: e.statusCode),
       );
-    } on PostgrestException catch (e) {
+    } on sb.PostgrestException catch (e) {
       return AuthResult.failure(
         AuthException('Failed to create user profile: ${e.message}'),
       );
@@ -105,7 +98,7 @@ class SupabaseAuthService implements AuthService {
       }
 
       return AuthResult.success(message: 'Logged in successfully');
-    } on AuthException catch (e) {
+    } on sb.AuthException catch (e) {
       return AuthResult.failure(
         AuthException(e.message, code: e.statusCode),
       );
@@ -129,7 +122,7 @@ class SupabaseAuthService implements AuthService {
   Future<void> resetPassword(String email) async {
     try {
       await _client.auth.resetPasswordForEmail(email);
-    } on AuthException catch (e) {
+    } on sb.AuthException catch (e) {
       throw AuthException(e.message, code: e.statusCode);
     } catch (e) {
       throw UnknownException('Failed to send reset email: $e');
@@ -152,7 +145,7 @@ class SupabaseAuthService implements AuthService {
 
       final roleString = response['role'] as String;
       return UserRole.fromJson(roleString);
-    } on PostgrestException catch (e) {
+    } on sb.PostgrestException catch (e) {
       throw AuthException('Failed to fetch user role: ${e.message}');
     } catch (e) {
       throw UnknownException('Failed to get user role: $e');

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'domain/entities/address.dart';
 import 'core/config/supabase_config.dart';
 import 'core/auth/auth_provider.dart';
 import 'core/auth/supabase_auth_service.dart';
@@ -39,8 +40,10 @@ import 'features/search/search_screen.dart';
 import 'features/products/product_listing_screen.dart';
 import 'features/products/product_details_screen.dart';
 import 'features/profile/edit_profile_screen.dart';
+import 'features/profile/addresses_screen.dart';
+import 'features/profile/address_form_screen.dart';
 import 'features/orders/orders_screen.dart';
-import 'data/repositories/mock_repository.dart';
+
 import 'main_wrapper.dart';
 import 'features/admin/admin_wrapper.dart';
 import 'features/admin/admin_dashboard_screen.dart';
@@ -62,6 +65,9 @@ import 'data/repositories/analytics_repository_impl.dart';
 import 'data/repositories/profile_repository_impl.dart';
 import 'core/auth/user_role.dart';
 import 'core/realtime/realtime_service.dart';
+import 'core/storage/image_storage_service.dart';
+import 'features/profile/providers/profile_provider.dart';
+import 'features/splash/splash_screen.dart';
 
 void main() async {
   // Ensure Flutter is initialized
@@ -200,6 +206,12 @@ class GroceryApp extends StatelessWidget {
             AnalyticsRepositoryImpl(SupabaseConfig.client),
           ),
         ),
+        ChangeNotifierProvider(
+          create: (_) => ProfileProvider(
+            SupabaseConfig.client,
+            MockImageStorageService(),
+          ),
+        ),
       ],
       child: MaterialApp.router(
         title: 'Grocery App',
@@ -218,19 +230,35 @@ final _adminNavigatorKey = GlobalKey<NavigatorState>();
 
 final GoRouter _router = GoRouter(
   navigatorKey: _rootNavigatorKey,
-  initialLocation: '/onboarding', // Start at Onboarding
+  initialLocation: '/splash', // Start at Splash
   redirect: (context, state) {
     // No redirect for non-admin routes
     if (!state.uri.toString().startsWith('/admin')) {
       return null;
     }
 
+    
     // Check if user is authenticated and is admin
     final authProvider = context.read<AuthProvider>();
     
-    if (!authProvider.isAuthenticated) {
-      // Not authenticated, redirect to auth
+    // Protect customer routes
+    final isAuthRoute = state.uri.toString().startsWith('/auth');
+    final isPublicRoute = state.uri.toString().startsWith('/onboarding') || 
+                          isAuthRoute ||
+                          state.uri.toString().startsWith('/help') ||
+                          state.uri.toString().startsWith('/faq') ||
+                          state.uri.toString().startsWith('/privacy');
+
+    if (!authProvider.isAuthenticated && !isPublicRoute) {
       return '/auth';
+    }
+
+    if (authProvider.isAuthenticated && isAuthRoute) {
+       return '/home';
+    }
+
+    if (!state.uri.toString().startsWith('/admin')) {
+      return null;
     }
 
     final userRole = authProvider.currentUserRole;
@@ -243,6 +271,11 @@ final GoRouter _router = GoRouter(
     return null;
   },
   routes: [
+    GoRoute(
+      path: '/splash',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => const SplashScreen(),
+    ),
      GoRoute(
       path: '/onboarding',
       parentNavigatorKey: _rootNavigatorKey,
@@ -439,6 +472,19 @@ final GoRouter _router = GoRouter(
       path: '/orders',
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) => const OrdersScreen(),
+    ),
+    GoRoute(
+      path: '/addresses',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) => const AddressesScreen(),
+    ),
+    GoRoute(
+      path: '/address_form',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) {
+        final address = state.extra as Address?;
+        return AddressFormScreen(address: address);
+      },
     ),
   ],
 );

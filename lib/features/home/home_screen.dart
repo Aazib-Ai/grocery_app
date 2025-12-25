@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../domain/entities/product.dart';
 import '../../shared/widgets/product_card.dart';
+import '../../shared/widgets/skeleton_loader.dart';
 import '../../shared/widgets/app_drawer.dart';
 import '../products/providers/product_provider.dart';
 import '../categories/providers/category_provider.dart';
@@ -15,7 +16,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late TabController _tabController;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
@@ -102,9 +103,17 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 Consumer<CategoryProvider>(
                   builder: (context, categoryProvider, child) {
                     if (categoryProvider.isLoading) {
-                      return const SizedBox(
+                      return SizedBox(
                         height: 40,
-                        child: Center(child: CircularProgressIndicator()),
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: 5,
+                          padding: const EdgeInsets.only(right: 24),
+                          itemBuilder: (context, index) => Padding(
+                            padding: const EdgeInsets.only(right: 16),
+                            child: const SkeletonLoader(width: 80, height: 40, borderRadius: 20),
+                          ),
+                        ),
                       );
                     }
 
@@ -169,9 +178,17 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 Consumer<ProductProvider>(
                   builder: (context, provider, child) {
                     if (provider.isLoading) {
-                      return const SizedBox(
+                      return SizedBox(
                         height: 320,
-                        child: Center(child: CircularProgressIndicator()),
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.only(top: 10, bottom: 20, right: 24),
+                          itemCount: 3,
+                          itemBuilder: (context, index) => Padding(
+                            padding: const EdgeInsets.only(right: 16),
+                            child: const SkeletonLoader(width: 200, height: 290, borderRadius: 15),
+                          ),
+                        ),
                       );
                     }
 
