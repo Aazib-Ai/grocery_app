@@ -1,6 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
-import '../../core/error/app_exception.dart';
+import '../../core/error/app_exception.dart' as app_error;
 import '../../domain/entities/order.dart';
 import '../../domain/repositories/order_repository.dart';
 import '../models/order_model.dart';
@@ -21,8 +21,7 @@ class OrderRepositoryImpl implements OrderRepository {
     try {
       var query = _supabase
           .from('orders')
-          .select('*, order_items(*)')
-          .order('created_at', ascending: false);
+          .select('*, order_items(*)');
 
       // Apply filters
       if (filter != null) {
@@ -40,16 +39,16 @@ class OrderRepositoryImpl implements OrderRepository {
         }
       }
 
-      final response = await query;
+      final response = await query.order('created_at', ascending: false);
 
       return (response as List)
           .map((json) => OrderModel.fromJson(json).toEntity())
           .toList();
     } on PostgrestException catch (e) {
-      throw BusinessException('Failed to load orders: ${e.message}',
+      throw app_error.BusinessException('Failed to load orders: ${e.message}',
           code: e.code);
     } catch (e) {
-      throw UnknownException('Failed to load orders: $e');
+      throw app_error.UnknownException('Failed to load orders: $e');
     }
   }
 
@@ -63,16 +62,16 @@ class OrderRepositoryImpl implements OrderRepository {
           .maybeSingle();
 
       if (response == null) {
-        throw BusinessException('Order not found', code: 'ORDER_NOT_FOUND');
+        throw app_error.BusinessException('Order not found', code: 'ORDER_NOT_FOUND');
       }
 
       return OrderModel.fromJson(response).toEntity();
     } on PostgrestException catch (e) {
-      throw BusinessException('Failed to load order: ${e.message}',
+      throw app_error.BusinessException('Failed to load order: ${e.message}',
           code: e.code);
     } catch (e) {
-      if (e is BusinessException) rethrow;
-      throw UnknownException('Failed to load order: $e');
+      if (e is app_error.BusinessException) rethrow;
+      throw app_error.UnknownException('Failed to load order: $e');
     }
   }
 
@@ -89,10 +88,10 @@ class OrderRepositoryImpl implements OrderRepository {
           .map((json) => OrderModel.fromJson(json).toEntity())
           .toList();
     } on PostgrestException catch (e) {
-      throw BusinessException('Failed to load customer orders: ${e.message}',
+      throw app_error.BusinessException('Failed to load customer orders: ${e.message}',
           code: e.code);
     } catch (e) {
-      throw UnknownException('Failed to load customer orders: $e');
+      throw app_error.UnknownException('Failed to load customer orders: $e');
     }
   }
 
@@ -104,7 +103,7 @@ class OrderRepositoryImpl implements OrderRepository {
     String? notes,
   }) async {
     if (items.isEmpty) {
-      throw ValidationException('Cannot create order with no items',
+      throw app_error.ValidationException('Cannot create order with no items',
           code: 'EMPTY_ORDER');
     }
 
@@ -112,7 +111,7 @@ class OrderRepositoryImpl implements OrderRepository {
       // Get current user
       final user = _supabase.auth.currentUser;
       if (user == null) {
-        throw AuthException('User not authenticated', code: 'NOT_AUTHENTICATED');
+        throw app_error.AuthException('User not authenticated', code: 'NOT_AUTHENTICATED');
       }
 
       // Calculate totals
@@ -164,11 +163,11 @@ class OrderRepositoryImpl implements OrderRepository {
       // Fetch the complete order with items
       return await getOrderById(orderId);
     } on PostgrestException catch (e) {
-      throw BusinessException('Failed to create order: ${e.message}',
+      throw app_error.BusinessException('Failed to create order: ${e.message}',
           code: e.code);
     } catch (e) {
-      if (e is ValidationException || e is AuthException) rethrow;
-      throw UnknownException('Failed to create order: $e');
+      if (e is app_error.ValidationException || e is app_error.AuthException) rethrow;
+      throw app_error.UnknownException('Failed to create order: $e');
     }
   }
 
@@ -200,10 +199,10 @@ class OrderRepositoryImpl implements OrderRepository {
 
       return OrderModel.fromJson(response).toEntity();
     } on PostgrestException catch (e) {
-      throw BusinessException('Failed to update order status: ${e.message}',
+      throw app_error.BusinessException('Failed to update order status: ${e.message}',
           code: e.code);
     } catch (e) {
-      throw UnknownException('Failed to update order status: $e');
+      throw app_error.UnknownException('Failed to update order status: $e');
     }
   }
 
@@ -218,7 +217,7 @@ class OrderRepositoryImpl implements OrderRepository {
           .maybeSingle();
 
       if (riderExists == null) {
-        throw ValidationException('Rider does not exist',
+        throw app_error.ValidationException('Rider does not exist',
             code: 'INVALID_RIDER');
       }
 
@@ -237,11 +236,11 @@ class OrderRepositoryImpl implements OrderRepository {
 
       return OrderModel.fromJson(response).toEntity();
     } on PostgrestException catch (e) {
-      throw BusinessException('Failed to assign rider: ${e.message}',
+      throw app_error.BusinessException('Failed to assign rider: ${e.message}',
           code: e.code);
     } catch (e) {
-      if (e is ValidationException) rethrow;
-      throw UnknownException('Failed to assign rider: $e');
+      if (e is app_error.ValidationException) rethrow;
+      throw app_error.UnknownException('Failed to assign rider: $e');
     }
   }
 }

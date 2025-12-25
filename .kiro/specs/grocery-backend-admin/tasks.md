@@ -163,41 +163,41 @@
 - [ ] 10. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 11. Implement rider management
-  - [ ] 11.1 Create rider data models and repository
+- [x] 11. Implement rider management
+  - [x] 11.1 Create rider data models and repository
     - Create lib/data/models/rider_model.dart
     - Create lib/domain/entities/rider.dart
     - Create lib/domain/repositories/rider_repository.dart interface
     - Create lib/data/repositories/rider_repository_impl.dart
     - _Requirements: 7.1, 7.2, 7.3, 7.4_
-  - [ ] 11.2 Write property test for rider CRUD round-trip
+  - [x] 11.2 Write property test for rider CRUD round-trip
     - **Property 23: Rider CRUD Round-Trip**
     - **Validates: Requirements 7.1**
-  - [ ] 11.3 Write property test for rider status on assignment
+  - [x] 11.3 Write property test for rider status on assignment
     - **Property 24: Rider Status on Assignment**
     - **Validates: Requirements 7.3**
-  - [ ] 11.4 Write property test for rider completion updates
+  - [x] 11.4 Write property test for rider completion updates
     - **Property 25: Rider Status and Count on Completion**
     - **Validates: Requirements 7.4**
 
-- [ ] 12. Implement delivery tracking
-  - [ ] 12.1 Create tracking data models and repository
+- [x] 12. Implement delivery tracking
+  - [x] 12.1 Create tracking data models and repository
     - Create lib/data/models/delivery_location_model.dart
     - Create lib/domain/entities/delivery_location.dart
     - Create lib/domain/repositories/tracking_repository.dart interface
     - Create lib/data/repositories/tracking_repository_impl.dart with Supabase realtime
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
-  - [ ] 12.2 Write property test for real-time location propagation
+  - [x] 12.2 Write property test for real-time location propagation
     - **Property 20: Real-Time Location Propagation**
     - **Validates: Requirements 6.3**
-  - [ ] 12.3 Write property test for delivery completion stops tracking
+  - [x] 12.3 Write property test for delivery completion stops tracking
     - **Property 21: Delivery Completion Stops Tracking**
     - **Validates: Requirements 6.5**
-  - [ ] 12.4 Create tracking provider
+  - [x] 12.4 Create tracking provider
     - Create lib/features/tracking/providers/tracking_provider.dart
     - Implement real-time location subscription
     - _Requirements: 6.2, 6.3_
-  - [ ] 12.5 Update order tracking screen with Google Maps
+  - [x] 12.5 Update order tracking screen with Google Maps
     - Refactor lib/features/tracking/order_tracking_screen.dart
     - Add real-time marker updates
     - Add ETA calculation using Google Maps Directions API
@@ -206,15 +206,15 @@
 - [ ] 13. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 14. Implement favorites functionality
-  - [ ] 14.1 Create favorites repository
+- [x] 14. Implement favorites functionality
+  - [x] 14.1 Create favorites repository
     - Create lib/domain/repositories/favorites_repository.dart interface
     - Create lib/data/repositories/favorites_repository_impl.dart
     - _Requirements: 11.1, 11.2, 11.3_
-  - [ ] 14.2 Write property test for favorites round-trip
+  - [x] 14.2 Write property test for favorites round-trip
     - **Property 33: Favorites Round-Trip**
     - **Validates: Requirements 11.1, 11.2**
-  - [ ] 14.3 Create favorites provider and update screen
+  - [x] 14.3 Create favorites provider and update screen
     - Create lib/features/favorites/providers/favorites_provider.dart
     - Refactor lib/features/favorites/favorites_screen.dart
     - _Requirements: 11.1, 11.2, 11.3_

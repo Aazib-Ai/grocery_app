@@ -55,4 +55,79 @@ class CategoryProvider with ChangeNotifier {
     _categories = [];
     await loadCategories();
   }
+
+  /// Create a new category (admin only)
+  Future<entities.Category?> createCategory({
+    required String name,
+    String? imageUrl,
+    int sortOrder = 0,
+  }) async {
+    try {
+      final category = await _repository.createCategory(
+        name: name,
+        imageUrl: imageUrl,
+        sortOrder: sortOrder,
+      );
+
+      // Add to local list
+      _categories.insert(0, category);
+      notifyListeners();
+
+      return category;
+    } catch (e) {
+      _error = 'Failed to create category: ${e.toString()}';
+      notifyListeners();
+      return null;
+    }
+  }
+
+  /// Update an existing category (admin only)
+  Future<entities.Category?> updateCategory(
+    String id, {
+    String? name,
+    String? imageUrl,
+    int? sortOrder,
+    bool? isActive,
+  }) async {
+    try {
+      final updatedCategory = await _repository.updateCategory(
+        id,
+        name: name,
+        imageUrl: imageUrl,
+        sortOrder: sortOrder,
+        isActive: isActive,
+      );
+
+      // Update in local list
+      final index = _categories.indexWhere((c) => c.id == id);
+      if (index != -1) {
+        _categories[index] = updatedCategory;
+        notifyListeners();
+      }
+
+      return updatedCategory;
+    } catch (e) {
+      _error = 'Failed to update category: ${e.toString()}';
+      notifyListeners();
+      return null;
+    }
+  }
+
+  /// Delete a category (admin only)
+  /// Returns true if successful, false otherwise
+  Future<bool> deleteCategory(String id) async {
+    try {
+      await _repository.deleteCategory(id);
+
+      // Remove from local list
+      _categories.removeWhere((c) => c.id == id);
+      notifyListeners();
+
+      return true;
+    } catch (e) {
+      _error = 'Failed to delete category: ${e.toString()}';
+      notifyListeners();
+      return false;
+    }
+  }
 }

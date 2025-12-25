@@ -7,8 +7,16 @@ import 'core/auth/auth_provider.dart';
 import 'core/auth/supabase_auth_service.dart';
 import 'features/products/providers/product_provider.dart';
 import 'features/categories/providers/category_provider.dart';
+import 'features/favorites/providers/favorites_provider.dart';
+import 'features/cart/providers/cart_provider.dart';
+import 'features/orders/providers/order_provider.dart';
+import 'features/tracking/providers/tracking_provider.dart';
 import 'data/repositories/product_repository_impl.dart';
 import 'data/repositories/category_repository_impl.dart';
+import 'data/repositories/favorites_repository_impl.dart';
+import 'data/repositories/cart_repository_impl.dart';
+import 'data/repositories/order_repository_impl.dart';
+import 'data/repositories/tracking_repository_impl.dart';
 import 'core/theme/app_theme.dart';
 import 'features/onboarding/onboarding_screen.dart';
 import 'features/auth/auth_screen.dart';
@@ -114,6 +122,36 @@ class GroceryApp extends StatelessWidget {
             CategoryRepositoryImpl(SupabaseConfig.client),
           ),
         ),
+        ChangeNotifierProxyProvider<AuthProvider, FavoritesProvider>(
+          create: (context) => FavoritesProvider(
+            FavoritesRepositoryImpl(SupabaseConfig.client),
+            context.read<AuthProvider>(),
+          ),
+          update: (context, auth, previous) => previous ?? FavoritesProvider(
+            FavoritesRepositoryImpl(SupabaseConfig.client),
+            auth,
+          ),
+        ),
+        ChangeNotifierProxyProvider<AuthProvider, CartProvider>(
+          create: (context) => CartProvider(
+            CartRepositoryImpl(SupabaseConfig.client),
+            context.read<AuthProvider>(),
+          ),
+          update: (context, auth, previous) => previous ?? CartProvider(
+            CartRepositoryImpl(SupabaseConfig.client),
+            auth,
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => OrderProvider(
+            repository: OrderRepositoryImpl(SupabaseConfig.client),
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => TrackingProvider(
+            repository: TrackingRepositoryImpl(SupabaseConfig.client),
+          ),
+        ),
       ],
       child: MaterialApp.router(
         title: 'Grocery App',
@@ -178,9 +216,12 @@ final GoRouter _router = GoRouter(
       builder: (context, state) => const PaymentMethodScreen(),
     ),
     GoRoute(
-      path: '/tracking',
+      path: '/tracking/:orderId',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) => const OrderTrackingScreen(),
+      builder: (context, state) {
+        final orderId = state.pathParameters['orderId']!;
+        return OrderTrackingScreen(orderId: orderId);
+      },
     ),
     GoRoute(
       path: '/cart',
