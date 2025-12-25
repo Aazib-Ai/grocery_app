@@ -1,6 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'core/config/supabase_config.dart';
+import 'core/auth/auth_provider.dart';
+import 'core/auth/supabase_auth_service.dart';
+import 'features/products/providers/product_provider.dart';
+import 'features/categories/providers/category_provider.dart';
+import 'data/repositories/product_repository_impl.dart';
+import 'data/repositories/category_repository_impl.dart';
 import 'core/theme/app_theme.dart';
 import 'features/onboarding/onboarding_screen.dart';
 import 'features/auth/auth_screen.dart';
@@ -88,11 +96,31 @@ class GroceryApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      title: 'Grocery App',
-      theme: AppTheme.lightTheme,
-      routerConfig: _router,
-      debugShowCheckedModeBanner: false,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (_) => AuthProvider(
+            SupabaseAuthService(SupabaseConfig.client),
+            const FlutterSecureStorage(),
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => ProductProvider(
+            ProductRepositoryImpl(SupabaseConfig.client),
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => CategoryProvider(
+            CategoryRepositoryImpl(SupabaseConfig.client),
+          ),
+        ),
+      ],
+      child: MaterialApp.router(
+        title: 'Grocery App',
+        theme: AppTheme.lightTheme,
+        routerConfig: _router,
+        debugShowCheckedModeBanner: false,
+      ),
     );
   }
 }
@@ -189,9 +217,7 @@ final GoRouter _router = GoRouter(
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) {
          final id = state.pathParameters['id']!;
-         // Mock finding product
-         final product = MockRepository.getProducts().firstWhere((p) => p.id == id, orElse: () => MockRepository.getProducts()[0]);
-         return ProductDetailsScreen(product: product);
+         return ProductDetailsScreen(productId: id);
       },
     ),
     GoRoute(

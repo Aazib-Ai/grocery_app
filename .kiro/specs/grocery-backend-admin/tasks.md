@@ -17,27 +17,27 @@
     - **Property 2: Route Protection by Authentication**
     - **Validates: Requirements 1.5**
 
-- [ ] 2. Implement authentication module
-  - [ ] 2.1 Create auth service and models
+- [x] 2. Implement authentication module
+  - [x] 2.1 Create auth service and models
     - Create lib/core/auth/auth_service.dart with signUp, signIn, signOut, resetPassword
     - Create lib/core/auth/auth_state.dart for authentication state management
     - Create lib/data/models/user_model.dart
     - _Requirements: 1.1, 1.2, 1.7_
-  - [ ] 2.2 Create auth provider for state management
+  - [x] 2.2 Create auth provider for state management
     - Create lib/core/auth/auth_provider.dart using ChangeNotifier
     - Implement session persistence with secure storage
     - _Requirements: 1.4_
-  - [ ] 2.3 Implement role-based authorization
+  - [x] 2.3 Implement role-based authorization
     - Create lib/core/auth/auth_guard.dart for route protection
     - Add role checking to auth provider
     - _Requirements: 1.3, 1.6_
-  - [ ] 2.4 Write property test for user role retrieval
+  - [x] 2.4 Write property test for user role retrieval
     - **Property 1: User Role Retrieval Consistency**
     - **Validates: Requirements 1.3**
-  - [ ] 2.5 Write property test for admin route authorization
+  - [x] 2.5 Write property test for admin route authorization
     - **Property 3: Admin Route Authorization**
     - **Validates: Requirements 1.6**
-  - [ ] 2.6 Update auth screens to use Supabase
+  - [x] 2.6 Update auth screens to use Supabase
     - Refactor lib/features/auth/auth_screen.dart to use AuthService
     - Refactor lib/features/auth/forgot_password_screen.dart
     - _Requirements: 1.1, 1.2, 1.7_
@@ -45,44 +45,44 @@
 - [ ] 3. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 4. Implement Cloudflare R2 image storage
-  - [ ] 4.1 Create image storage service
+- [x] 4. Implement Cloudflare R2 image storage
+  - [x] 4.1 Create image storage service
     - Create lib/core/storage/image_storage_service.dart
     - Implement uploadProductImage, uploadUserAvatar, deleteImage methods
     - Use Supabase Edge Functions or direct R2 API
     - _Requirements: 13.1, 13.2, 13.3_
-  - [ ] 4.2 Create image validator
+  - [x] 4.2 Create image validator
     - Create lib/core/validators/image_validator.dart
     - Validate file type (JPEG, PNG, WebP) and size (max 5MB)
     - _Requirements: 2.4_
-  - [ ] 4.3 Write property test for image validation
+  - [x] 4.3 Write property test for image validation
     - **Property 6: Image Validation**
     - **Validates: Requirements 2.4**
-  - [ ] 4.4 Write property test for image upload uniqueness
+  - [x] 4.4 Write property test for image upload uniqueness
     - **Property 37: Image Upload Uniqueness**
     - **Validates: Requirements 13.1**
 
-- [ ] 5. Implement product management
-  - [ ] 5.1 Create product data models and repository
+- [x] 5. Implement product management
+  - [x] 5.1 Create product data models and repository
     - Create lib/data/models/product_model.dart with fromJson/toJson
     - Create lib/domain/entities/product.dart
     - Create lib/domain/repositories/product_repository.dart interface
     - Create lib/data/repositories/product_repository_impl.dart
     - _Requirements: 2.1, 2.2, 2.3, 2.5, 2.6_
-  - [ ] 5.2 Write property test for product CRUD round-trip
+  - [x] 5.2 Write property test for product CRUD round-trip
     - **Property 4: Product CRUD Round-Trip**
     - **Validates: Requirements 2.1, 2.2**
-  - [ ] 5.3 Write property test for product soft delete
+  - [x] 5.3 Write property test for product soft delete
     - **Property 5: Product Soft Delete**
     - **Validates: Requirements 2.3**
-  - [ ] 5.4 Write property test for customer product visibility
+  - [x] 5.4 Write property test for customer product visibility
     - **Property 7: Customer Product Visibility**
     - **Validates: Requirements 2.5**
-  - [ ] 5.5 Create product provider
+  - [x] 5.5 Create product provider
     - Create lib/features/products/providers/product_provider.dart
     - Implement product list, search, and CRUD operations
     - _Requirements: 2.1, 2.5_
-  - [ ] 5.6 Update product screens to use Supabase
+  - [x] 5.6 Update product screens to use Supabase
     - Refactor lib/features/products/product_listing_screen.dart
     - Refactor lib/features/products/product_details_screen.dart
     - Update lib/features/home/home_screen.dart to fetch from Supabase

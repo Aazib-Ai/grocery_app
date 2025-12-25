@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
-import '../../data/models/product.dart';
-import '../../data/repositories/mock_repository.dart';
+import '../../domain/entities/product.dart';
 import '../../shared/widgets/product_card.dart';
-
 import '../../shared/widgets/app_drawer.dart';
+import '../products/providers/product_provider.dart';
+import '../categories/providers/category_provider.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -16,13 +17,17 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final products = MockRepository.getProducts();
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>(); // Key for Drawer
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
+    // Load products and categories when home screen initializes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ProductProvider>().loadProducts();
+      context.read<CategoryProvider>().loadCategories();
+    });
   }
 
   @override
@@ -125,19 +130,39 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                  ),
 
                 // Horizontal List
-                SizedBox(
-                  height: 320, 
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.only(top: 10, bottom: 20, right: 24),
-                    itemCount: products.length > 5 ? 5 : products.length, // Show top 5 horizontally
-                    itemBuilder: (context, index) {
-                       return ProductCard(
-                         product: products[index],
-                         onTap: () => context.push('/product/${products[index].id}'),
-                       );
-                    },
-                  ),
+                Consumer<ProductProvider>(
+                  builder: (context, provider, child) {
+                    if (provider.isLoading) {
+                      return const SizedBox(
+                        height: 320,
+                        child: Center(child: CircularProgressIndicator()),
+                      );
+                    }
+
+                    final products = provider.products.take(5).toList();
+
+                    if (products.isEmpty) {
+                      return const SizedBox(
+                        height: 320,
+                        child: Center(child: Text('No products available')),
+                      );
+                    }
+
+                    return SizedBox(
+                      height: 320,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.only(top: 10, bottom: 20, right: 24),
+                        itemCount: products.length,
+                        itemBuilder: (context, index) {
+                          return ProductCard(
+                            product: products[index],
+                            onTap: () => context.push('/product/${products[index].id}'),
+                          );
+                        },
+                      ),
+                    );
+                  },
                 ),
                 
                 const SizedBox(height: 24),
@@ -147,41 +172,65 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 ),
                 const SizedBox(height: 16),
                 
-                // Vertical Grid/List for "Scroll down for seeing more"
-                // Using a non-scrolling ListView (shrinkWrap: true) inside SingleChildScrollView
-                ListView.builder(
-                  padding: const EdgeInsets.only(right: 24.0),
-                  physics: const NeverScrollableScrollPhysics(),
-                  shrinkWrap: true,
-                  itemCount: products.length,
-                  itemBuilder: (context, index) {
-                    // Using a horizontal card look for the vertical list? Or just reuse ProductCard in a grid?
-                    // Let's use a simple ListTile variant or just the same ProductCard but perhaps wrapped differently?
-                    // User said "scroll down for seeing more products".
-                    // Let's make a simple vertical list item or a standard grid. 
-                    // To be safe and quick, let's use a Wrap or GridView.
-                    // Actually, a ListView with a custom list item is often cleaner for "more".
-                    final product = products[index];
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 16),
-                      elevation: 2,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                           backgroundImage: AssetImage(product.imageUrl),
-                           backgroundColor: Colors.transparent,
-                        ),
-                        title: Text(product.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text("Rs. ${product.price}"),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.add_shopping_cart, color: AppColors.primaryGreen),
-                          onPressed: () {
-                             // Add to cart logic or snackbar
-                             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Added to cart")));
-                          },
-                        ),
-                        onTap: () => context.push('/product/${product.id}'),
-                      ),
+                // Vertical List for "More Groceries"
+                Consumer<ProductProvider>(
+                  builder: (context, provider, child) {
+                    final products = provider.products;
+
+                    if (products.isEmpty) {
+                      return const SizedBox.shrink();
+                    }
+
+                    return ListView.builder(
+                      padding: const EdgeInsets.only(right: 24.0),
+                      physics: const NeverScrollableScrollPhysics(),
+                      shrinkWrap: true,
+                      itemCount: products.length,
+                      itemBuilder: (context, index) {
+                        final product = products[index];
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          elevation: 2,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                          child: ListTile(
+                            leading: product.imageUrl != null
+                                ? CircleAvatar(
+                                    backgroundImage: AssetImage(product.imageUrl!),
+                                    backgroundColor: Colors.transparent,
+                                    onBackgroundImageError: (_, __) {},
+                                    child: product.imageUrl == null
+                                        ? const Icon(Icons.shopping_bag)
+                                        : null,
+                                  )
+                                : CircleAvatar(
+                                    backgroundColor: Colors.grey[200],
+                                    child: const Icon(
+                                      Icons.shopping_bag,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                            title: Text(
+                              product.name,
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            subtitle: Text("Rs. ${product.price.toStringAsFixed(0)}"),
+                            trailing: IconButton(
+                              icon: const Icon(
+                                Icons.add_shopping_cart,
+                                color: AppColors.primaryGreen,
+                              ),
+                              onPressed: () {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text("Added to cart")),
+                                );
+                              },
+                            ),
+                            onTap: () => context.push('/product/${product.id}'),
+                          ),
+                        );
+                      },
                     );
                   },
                 ),
