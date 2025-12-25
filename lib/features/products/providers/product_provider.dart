@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../../../domain/entities/product.dart';
 import '../../../domain/repositories/product_repository.dart';
+import '../services/search_service.dart';
 
 /// State management provider for products using ChangeNotifier.
 /// 
@@ -8,8 +9,9 @@ import '../../../domain/repositories/product_repository.dart';
 /// loading and error states for the UI.
 class ProductProvider extends ChangeNotifier {
   final ProductRepository _repository;
+  final SearchService? _searchService;
 
-  ProductProvider(this._repository);
+  ProductProvider(this._repository, [this._searchService]);
 
   // State
   List<Product> _products = [];
@@ -74,7 +76,7 @@ class ProductProvider extends ChangeNotifier {
     }
   }
 
-  /// Search products by name or description
+  /// Search products by name or description (Basic)
   Future<void> searchProducts(String query) async {
     if (query.isEmpty) {
       _isSearching = false;
@@ -90,6 +92,38 @@ class ProductProvider extends ChangeNotifier {
 
     try {
       _searchResults = await _repository.searchProducts(query);
+      _errorMessage = null;
+    } catch (e) {
+      _errorMessage = e.toString();
+      _searchResults = [];
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Advanced search with filtering and sorting
+  Future<void> advancedSearch({
+    String? query,
+    String? categoryId,
+    SortBy sortBy = SortBy.nameAsc,
+  }) async {
+    if (_searchService == null) {
+      await searchProducts(query ?? '');
+      return;
+    }
+
+    _isSearching = true;
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      _searchResults = await _searchService!.searchProducts(
+        query: query,
+        categoryId: categoryId,
+        sortBy: sortBy,
+      );
       _errorMessage = null;
     } catch (e) {
       _errorMessage = e.toString();

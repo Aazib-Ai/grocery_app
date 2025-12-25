@@ -17,6 +17,9 @@ import 'data/repositories/favorites_repository_impl.dart';
 import 'data/repositories/cart_repository_impl.dart';
 import 'data/repositories/order_repository_impl.dart';
 import 'data/repositories/tracking_repository_impl.dart';
+import 'data/repositories/rider_repository_impl.dart';
+import 'features/riders/providers/rider_provider.dart';
+import 'features/search/services/search_service.dart';
 import 'core/theme/app_theme.dart';
 import 'features/onboarding/onboarding_screen.dart';
 import 'features/auth/auth_screen.dart';
@@ -39,6 +42,22 @@ import 'features/profile/edit_profile_screen.dart';
 import 'features/orders/orders_screen.dart';
 import 'data/repositories/mock_repository.dart';
 import 'main_wrapper.dart';
+import 'features/admin/admin_wrapper.dart';
+import 'features/admin/admin_dashboard_screen.dart';
+import 'features/admin/products/admin_products_screen.dart';
+import 'features/admin/products/admin_product_form_screen.dart';
+import 'features/admin/categories/admin_categories_screen.dart';
+import 'features/admin/categories/admin_category_form_screen.dart';
+import 'features/admin/riders/admin_riders_screen.dart';
+import 'features/admin/riders/admin_rider_form_screen.dart';
+import 'features/admin/riders/admin_rider_details_screen.dart';
+import 'features/admin/orders/admin_orders_screen.dart';
+import 'features/admin/orders/admin_order_details_screen.dart';
+import 'features/admin/users/admin_users_screen.dart';
+import 'features/admin/users/admin_user_details_screen.dart';
+import 'features/admin/users/providers/admin_user_provider.dart';
+import 'data/repositories/profile_repository_impl.dart';
+import 'core/auth/user_role.dart';
 
 void main() async {
   // Ensure Flutter is initialized
@@ -115,6 +134,10 @@ class GroceryApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (_) => ProductProvider(
             ProductRepositoryImpl(SupabaseConfig.client),
+            SearchService(
+              ProductRepositoryImpl(SupabaseConfig.client),
+              SupabaseConfig.client,
+            ),
           ),
         ),
         ChangeNotifierProvider(
@@ -152,6 +175,16 @@ class GroceryApp extends StatelessWidget {
             repository: TrackingRepositoryImpl(SupabaseConfig.client),
           ),
         ),
+        ChangeNotifierProvider(
+          create: (_) => RiderProvider(
+            RiderRepositoryImpl(SupabaseConfig.client),
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => AdminUserProvider(
+            ProfileRepositoryImpl(SupabaseConfig.client),
+          ),
+        ),
       ],
       child: MaterialApp.router(
         title: 'Grocery App',
@@ -166,9 +199,34 @@ class GroceryApp extends StatelessWidget {
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
+final _adminNavigatorKey = GlobalKey<NavigatorState>();
+
 final GoRouter _router = GoRouter(
   navigatorKey: _rootNavigatorKey,
   initialLocation: '/onboarding', // Start at Onboarding
+  redirect: (context, state) {
+    // No redirect for non-admin routes
+    if (!state.uri.toString().startsWith('/admin')) {
+      return null;
+    }
+
+    // Check if user is authenticated and is admin
+    final authProvider = context.read<AuthProvider>();
+    
+    if (!authProvider.isAuthenticated) {
+      // Not authenticated, redirect to auth
+      return '/auth';
+    }
+
+    final userRole = authProvider.currentUserRole;
+    if (userRole == null || !userRole.isAdmin) {
+      // Not an admin, redirect to home
+      return '/home';
+    }
+
+    // User is admin, allow access
+    return null;
+  },
   routes: [
      GoRoute(
       path: '/onboarding',
@@ -201,6 +259,93 @@ final GoRouter _router = GoRouter(
         GoRoute(
           path: '/profile',
           builder: (context, state) => const ProfileScreen(),
+        ),
+      ],
+    ),
+    // Admin Routes
+    ShellRoute(
+      navigatorKey: _adminNavigatorKey,
+      builder: (context, state, child) {
+        return AdminWrapper(child: child);
+      },
+      routes: [
+        GoRoute(
+          path: '/admin',
+          builder: (context, state) => const AdminDashboardScreen(),
+        ),
+        GoRoute(
+          path: '/admin/products',
+          builder: (context, state) => const AdminProductsScreen(),
+        ),
+        GoRoute(
+          path: '/admin/products/new',
+          builder: (context, state) => const AdminProductFormScreen(),
+        ),
+        GoRoute(
+          path: '/admin/products/:id',
+          builder: (context, state) {
+            final productId = state.pathParameters['id']!;
+            return AdminProductFormScreen(productId: productId);
+          },
+        ),
+        GoRoute(
+          path: '/admin/categories',
+          builder: (context, state) => const AdminCategoriesScreen(),
+        ),
+        GoRoute(
+          path: '/admin/categories/new',
+          builder: (context, state) => const AdminCategoryFormScreen(),
+        ),
+        GoRoute(
+          path: '/admin/categories/:id',
+          builder: (context, state) {
+            final categoryId = state.pathParameters['id']!;
+            return AdminCategoryFormScreen(categoryId: categoryId);
+          },
+        ),
+        GoRoute(
+          path: '/admin/riders',
+          builder: (context, state) => const AdminRidersScreen(),
+        ),
+        GoRoute(
+          path: '/admin/riders/new',
+          builder: (context, state) => const AdminRiderFormScreen(),
+        ),
+        GoRoute(
+          path: '/admin/riders/:id',
+          builder: (context, state) {
+            final riderId = state.pathParameters['id']!;
+            return AdminRiderDetailsScreen(riderId: riderId);
+          },
+        ),
+        GoRoute(
+          path: '/admin/riders/:id/edit',
+          builder: (context, state) {
+            final riderId = state.pathParameters['id']!;
+            return AdminRiderFormScreen(riderId: riderId);
+          },
+        ),
+        GoRoute(
+          path: '/admin/orders',
+          builder: (context, state) => const AdminOrdersScreen(),
+        ),
+        GoRoute(
+          path: '/admin/orders/:id',
+          builder: (context, state) {
+            final orderId = state.pathParameters['id']!;
+            return AdminOrderDetailsScreen(orderId: orderId);
+          },
+        ),
+        GoRoute(
+          path: '/admin/users',
+          builder: (context, state) => const AdminUsersScreen(),
+        ),
+        GoRoute(
+          path: '/admin/users/:id',
+          builder: (context, state) {
+            final userId = state.pathParameters['id']!;
+            return AdminUserDetailsScreen(userId: userId);
+          },
         ),
       ],
     ),

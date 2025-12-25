@@ -219,95 +219,95 @@
     - Refactor lib/features/favorites/favorites_screen.dart
     - _Requirements: 11.1, 11.2, 11.3_
 
-- [ ] 15. Implement search and filtering
-  - [ ] 15.1 Create search service
+- [x] 15. Implement search and filtering
+  - [x] 15.1 Create search service
     - Create lib/features/search/services/search_service.dart
     - Implement full-text search with Supabase
     - _Requirements: 12.1, 12.2, 12.3, 12.4_
-  - [ ] 15.2 Write property test for search results match query
+  - [x] 15.2 Write property test for search results match query
     - **Property 34: Search Results Match Query**
     - **Validates: Requirements 12.1**
-  - [ ] 15.3 Write property test for category filter accuracy
+  - [x] 15.3 Write property test for category filter accuracy
     - **Property 35: Category Filter Accuracy**
     - **Validates: Requirements 12.2**
-  - [ ] 15.4 Write property test for sort order correctness
+  - [x] 15.4 Write property test for sort order correctness
     - **Property 36: Sort Order Correctness**
     - **Validates: Requirements 12.3**
-  - [ ] 15.5 Update search screen
+  - [x] 15.5 Update search screen
     - Refactor lib/features/search/search_screen.dart with filters and sorting
     - _Requirements: 12.1, 12.2, 12.3, 12.4_
 
-- [ ] 16. Implement customer profile management
-  - [ ] 16.1 Create address data models and repository
+- [x] 16. Implement customer profile management
+  - [x] 16.1 Create address data models and repository
     - Create lib/data/models/address_model.dart
     - Create lib/domain/repositories/address_repository.dart interface
     - Create lib/data/repositories/address_repository_impl.dart
     - _Requirements: 10.2, 10.3, 10.4_
-  - [ ] 16.2 Write property test for profile update round-trip
+  - [x] 16.2 Write property test for profile update round-trip
     - **Property 30: Profile Update Round-Trip**
     - **Validates: Requirements 10.1**
-  - [ ] 16.3 Write property test for address round-trip
+  - [x] 16.3 Write property test for address round-trip
     - **Property 31: Address Round-Trip**
     - **Validates: Requirements 10.2**
-  - [ ] 16.4 Write property test for single default address
+  - [x] 16.4 Write property test for single default address
     - **Property 32: Single Default Address**
     - **Validates: Requirements 10.3**
-  - [ ] 16.5 Create profile provider and update screens
+  - [x] 16.5 Create profile provider and update screens
     - Create lib/features/profile/providers/profile_provider.dart
     - Refactor lib/features/profile/profile_screen.dart
     - Refactor lib/features/profile/edit_profile_screen.dart
     - Add address management UI
     - _Requirements: 10.1, 10.2, 10.3, 10.4_
 
-- [ ] 17. Checkpoint - Ensure all tests pass
+- [x] 17. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 18. Implement admin dashboard - Products
-  - [ ] 18.1 Create admin navigation and layout
+- [x] 18. Implement admin dashboard - Products
+  - [x] 18.1 Create admin navigation and layout
     - Create lib/features/admin/admin_wrapper.dart with admin navigation
     - Create lib/features/admin/admin_dashboard_screen.dart
     - Update router to include admin routes with auth guard
     - _Requirements: 9.1_
-  - [ ] 18.2 Create admin product management screens
+  - [x] 18.2 Create admin product management screens
     - Create lib/features/admin/products/admin_products_screen.dart (list view)
     - Create lib/features/admin/products/admin_product_form_screen.dart (create/edit)
     - Include image upload with R2
     - _Requirements: 2.1, 2.2, 2.3, 2.6_
-  - [ ] 18.3 Create admin category management screens
+  - [x] 18.3 Create admin category management screens
     - Create lib/features/admin/categories/admin_categories_screen.dart
     - Create lib/features/admin/categories/admin_category_form_screen.dart
     - _Requirements: 3.1, 3.2, 3.3_
 
-- [ ] 19. Implement admin dashboard - Orders
-  - [ ] 19.1 Create admin order management screens
+- [x] 19. Implement admin dashboard - Orders
+  - [x] 19.1 Create admin order management screens
     - Create lib/features/admin/orders/admin_orders_screen.dart with filters
     - Create lib/features/admin/orders/admin_order_details_screen.dart
     - Include status update and rider assignment
     - _Requirements: 5.1, 5.2, 5.3_
-  - [ ] 19.2 Write property test for order status update persistence
+  - [x] 19.2 Write property test for order status update persistence
     - **Property 17: Order Status Update Persistence**
     - **Validates: Requirements 5.2**
-  - [ ] 19.3 Write property test for rider assignment updates order
+  - [x] 19.3 Write property test for rider assignment updates order
     - **Property 18: Rider Assignment Updates Order**
     - **Validates: Requirements 5.3**
 
-- [ ] 20. Implement admin dashboard - Riders
-  - [ ] 20.1 Create admin rider management screens
+- [x] 20. Implement admin dashboard - Riders
+  - [x] 20.1 Create admin rider management screens
     - Create lib/features/admin/riders/admin_riders_screen.dart
     - Create lib/features/admin/riders/admin_rider_form_screen.dart
     - Create lib/features/admin/riders/admin_rider_details_screen.dart
     - _Requirements: 7.1, 7.2, 7.5_
 
-- [ ] 21. Implement admin dashboard - Users
-  - [ ] 21.1 Create admin user management screens
+- [x] 21. Implement admin dashboard - Users
+  - [x] 21.1 Create admin user management screens
     - Create lib/features/admin/users/admin_users_screen.dart with search
     - Create lib/features/admin/users/admin_user_details_screen.dart
     - Include disable/enable user functionality
     - _Requirements: 8.1, 8.2, 8.3, 8.4_
-  - [ ] 21.2 Write property test for user search accuracy
+  - [x] 21.2 Write property test for user search accuracy
     - **Property 26: User Search Accuracy**
     - **Validates: Requirements 8.2**
-  - [ ] 21.3 Write property test for disabled user login prevention
+  - [x] 21.3 Write property test for disabled user login prevention
     - **Property 27: Disabled User Login Prevention**
     - **Validates: Requirements 8.3**
 

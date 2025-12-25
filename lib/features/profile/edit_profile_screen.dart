@@ -1,8 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
-import '../../data/repositories/mock_repository.dart';
 import '../../shared/widgets/custom_button.dart';
-import '../checkout/widgets/selection_tile.dart';
+import 'providers/profile_provider.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -12,15 +14,103 @@ class EditProfileScreen extends StatefulWidget {
 }
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
-  String _selectedPayment = 'Card';
-  final user = MockRepository.getUserProfile();
+  final _formKey = GlobalKey<FormState>();
+  late TextEditingController _nameController;
+  late TextEditingController _phoneController;
+  File? _selectedImage;
+  final ImagePicker _picker = ImagePicker();
+
+  @override
+  void initState() {
+    super.initState();
+    final provider = context.read<ProfileProvider>();
+    _nameController = TextEditingController(text: provider.userProfile?.name ?? '');
+    _phoneController = TextEditingController(text: provider.userProfile?.phone ?? '');
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _phoneController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 85,
+      );
+
+      if (image != null) {
+        setState(() {
+          _selectedImage = File(image.path);
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to pick image: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _saveProfile() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    final provider = context.read<ProfileProvider>();
+
+    // Upload avatar if image was selected
+    if (_selectedImage != null) {
+      final success = await provider.uploadAvatar(_selectedImage!);
+      if (!success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(provider.error ?? 'Failed to upload avatar'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+    }
+
+    // Update profile
+    final success = await provider.updateProfile(
+      name: _nameController.text.trim(),
+      phone: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
+    );
+
+    if (mounted) {
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Profile updated successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pop(context);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(provider.error ?? 'Failed to update profile'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF6F6F9),
       appBar: AppBar(
-        title: const Text("My Proile"), // "Proile" typo in design, likely should be Profile
+        title: const Text("Edit Profile"),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -30,141 +120,131 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text("Information", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-            const SizedBox(height: 16),
-            
-            // Info Card
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Row(
+      body: Consumer<ProfileProvider>(
+        builder: (context, profileProvider, child) {
+          final user = profileProvider.userProfile;
+
+          if (user == null) {
+            return const Center(child: Text('No user profile available'));
+          }
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(24.0),
+            child: Form(
+              key: _formKey,
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.network(user.imageUrl, width: 60, height: 60, fit: BoxFit.cover),
+                  const Text("Profile Photo", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                  const SizedBox(height: 16),
+                  
+                  // Profile photo section
+                  Center(
+                    child: GestureDetector(
+                      onTap: _pickImage,
+                      child: Stack(
+                        children: [
+                          Container(
+                            width: 120,
+                            height: 120,
+                            decoration: BoxDecoration(
+                              color: Colors.grey[200],
+                              shape: BoxShape.circle,
+                              image: _selectedImage != null
+                                  ? DecorationImage(
+                                      image: FileImage(_selectedImage!),
+                                      fit: BoxFit.cover,
+                                    )
+                                  : (user.avatarUrl != null
+                                      ? DecorationImage(
+                                          image: NetworkImage(user.avatarUrl!),
+                                          fit: BoxFit.cover,
+                                        )
+                                      : null),
+                            ),
+                            child: _selectedImage == null && user.avatarUrl == null
+                                ? const Icon(Icons.person, size: 60, color: Colors.grey)
+                                : null,
+                          ),
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryGreen,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
+
+                  const SizedBox(height: 32),
+                  const Text("Information", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                  const SizedBox(height: 16),
+                  
+                  // Name field
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(user.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                        const SizedBox(height: 4),
-                        Text(user.email, style: const TextStyle(color: Colors.grey, fontSize: 13)),
-                        const SizedBox(height: 8),
-                         Text(user.address, style: const TextStyle(color: Colors.grey, fontSize: 13)),
+                        const Text('Name', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                        TextFormField(
+                          controller: _nameController,
+                          decoration: const InputDecoration(
+                            border: InputBorder.none,
+                            hintText: 'Enter your name',
+                          ),
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Name is required';
+                            }
+                            return null;
+                          },
+                        ),
+                        const Divider(),
+                        const Text('Email', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                        Text(
+                          user.email,
+                          style: const TextStyle(fontSize: 16, color: Colors.black54),
+                        ),
+                        const Divider(),
+                        const Text('Phone', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                        TextFormField(
+                          controller: _phoneController,
+                          decoration: const InputDecoration(
+                            border: InputBorder.none,
+                            hintText: 'Enter your phone number',
+                          ),
+                          keyboardType: TextInputType.phone,
+                        ),
                       ],
                     ),
-                  )
+                  ),
+
+                  const SizedBox(height: 48),
+                  
+                  if (profileProvider.isLoading)
+                    const Center(child: CircularProgressIndicator())
+                  else
+                    PrimaryButton(
+                      text: "Save Changes",
+                      onPressed: _saveProfile,
+                    ),
                 ],
               ),
             ),
-            
-            const SizedBox(height: 32),
-            const Text("Payment Mathod", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)), // "Mathod" typo in design
-            const SizedBox(height: 16),
-            
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Column(
-                children: [
-                  _PaymentTile(
-                    title: "Card",
-                    icon: Icons.credit_card,
-                    color: const Color(0xFF4ADE80), // Green
-                    isSelected: _selectedPayment == 'Card',
-                    onTap: () => setState(() => _selectedPayment = 'Card'),
-                  ),
-                  _PaymentTile(
-                    title: "Bank account",
-                    icon: Icons.account_balance,
-                    color: const Color(0xFFE84288), // Pink
-                    isSelected: _selectedPayment == 'Bank account',
-                    onTap: () => setState(() => _selectedPayment = 'Bank account'),
-                  ),
-                  _PaymentTile(
-                    title: "Paypal",
-                    icon: Icons.payment, // Or paypal icon if available, normally needs FontAwesome or custom asset. Using generic for now.
-                    color: const Color(0xFF2563EB), // Blue
-                    isSelected: _selectedPayment == 'Paypal',
-                    onTap: () => setState(() => _selectedPayment = 'Paypal'),
-                  ),
-                ],
-              ),
-            ),
-             const SizedBox(height: 48),
-            PrimaryButton(
-              text: "Update",
-              onPressed: () {},
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// Helper for Edit Profile specific Payment Tile to avoid breaking shared widget
-class _PaymentTile extends StatelessWidget {
-  final String title;
-  final IconData icon;
-  final Color color;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _PaymentTile({
-    required this.title,
-    required this.icon,
-    required this.color,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12.0),
-        child: Row(
-          children: [
-            Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: isSelected ? AppColors.primaryGreen : Colors.grey,
-                  width: isSelected ? 2 : 1,
-                ),
-              ),
-              width: 20, height: 20,
-              child: isSelected ? const Center(child: CircleAvatar(radius: 4, backgroundColor: AppColors.primaryGreen)) : null,
-            ),
-            const SizedBox(width: 16),
-             Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(icon, color: Colors.white, size: 20),
-            ),
-            const SizedBox(width: 16),
-            Text(title, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 16)),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
