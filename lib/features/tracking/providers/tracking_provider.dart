@@ -4,6 +4,8 @@ import '../../../core/config/supabase_config.dart';
 import '../../../data/repositories/tracking_repository_impl.dart';
 import '../../../domain/entities/delivery_location.dart';
 import '../../../domain/repositories/tracking_repository.dart';
+import '../../../core/realtime/realtime_service.dart';
+
 
 /// Provider for managing delivery tracking state.
 /// 
@@ -18,8 +20,12 @@ class TrackingProvider with ChangeNotifier {
   StreamSubscription<DeliveryLocation>? _locationSubscription;
   String? _currentOrderId;
 
-  TrackingProvider({TrackingRepository? repository})
-      : _repository = repository ?? TrackingRepositoryImpl(SupabaseConfig.client);
+  final RealtimeService? _realtimeService;
+
+  TrackingProvider({TrackingRepository? repository, RealtimeService? realtimeService})
+      : _repository = repository ?? TrackingRepositoryImpl(SupabaseConfig.client),
+        _realtimeService = realtimeService;
+
 
   // Getters
   DeliveryLocation? get currentLocation => _currentLocation;
@@ -44,7 +50,14 @@ class TrackingProvider with ChangeNotifier {
       notifyListeners();
 
       // Subscribe to real-time updates
-      _locationSubscription = _repository.watchDeliveryLocation(orderId).listen(
+      Stream<DeliveryLocation> stream;
+      if (_realtimeService != null) {
+        stream = _realtimeService!.deliveryLocationStream(orderId);
+      } else {
+        stream = _repository.watchDeliveryLocation(orderId);
+      }
+      
+      _locationSubscription = stream.listen(
         (location) {
           _currentLocation = location;
           _error = null;
@@ -120,6 +133,60 @@ class TrackingProvider with ChangeNotifier {
     } finally {
       _setLoading(false);
     }
+  }
+
+  List<DeliveryLocation> _activeDeliveries = [];
+  StreamSubscription<DeliveryLocation>? _allDeliveriesSubscription;
+
+  List<DeliveryLocation> get activeDeliveries => _activeDeliveries;
+
+  /// Load all active delivery locations.
+  Future<void> loadActiveDeliveries() async {
+    _setLoading(true);
+    _error = null;
+    notifyListeners();
+
+    try {
+      _activeDeliveries = await _repository.getActiveDeliveryLocations();
+    } catch (e) {
+      _error = e.toString();
+    } finally {
+      _setLoading(false);
+      notifyListeners();
+    }
+  }
+
+  /// Start watching all active delivery locations.
+  void startWatchingAllDeliveries() {
+    stopWatchingAllDeliveries();
+    
+    try {
+      _allDeliveriesSubscription = _repository.watchAllDeliveryLocations().listen(
+        (location) {
+          // Update the location in the active list
+          final index = _activeDeliveries.indexWhere((l) => l.orderId == location.orderId);
+          if (index != -1) {
+            _activeDeliveries[index] = location;
+          } else {
+            // New active delivery? Or just an update for one we missed?
+            _activeDeliveries.add(location);
+          }
+          notifyListeners();
+        },
+        onError: (e) {
+          debugPrint('Error watching all deliveries: $e');
+        },
+      );
+    } catch (e) {
+       _error = e.toString();
+       notifyListeners();
+    }
+  }
+
+  /// Stop watching all active delivery locations.
+  void stopWatchingAllDeliveries() {
+    _allDeliveriesSubscription?.cancel();
+    _allDeliveriesSubscription = null;
   }
 
   /// Clear error message

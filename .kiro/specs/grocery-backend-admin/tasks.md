@@ -311,28 +311,28 @@
     - **Property 27: Disabled User Login Prevention**
     - **Validates: Requirements 8.3**
 
-- [ ] 22. Implement admin dashboard - Deliveries
-  - [ ] 22.1 Create admin delivery tracking screen
+- [x] 22. Implement admin dashboard - Deliveries
+  - [x] 22.1 Create admin delivery tracking screen
     - Create lib/features/admin/deliveries/admin_deliveries_screen.dart
     - Display all active deliveries on map with rider locations
     - _Requirements: 6.6_
-  - [ ] 22.2 Write property test for active deliveries query
+  - [x] 22.2 Write property test for active deliveries query
     - **Property 22: Active Deliveries Query**
     - **Validates: Requirements 6.6**
 
-- [ ] 23. Implement admin dashboard - Analytics
-  - [ ] 23.1 Create analytics repository and service
+- [x] 23. Implement admin dashboard - Analytics
+  - [x] 23.1 Create analytics repository and service
     - Create lib/domain/repositories/analytics_repository.dart interface
     - Create lib/data/repositories/analytics_repository_impl.dart
     - Implement dashboard metrics, sales data, top products queries
     - _Requirements: 9.1, 9.2, 9.3, 9.4_
-  - [ ] 23.2 Write property test for dashboard metrics consistency
+  - [x] 23.2 Write property test for dashboard metrics consistency
     - **Property 28: Dashboard Metrics Consistency**
     - **Validates: Requirements 9.1**
-  - [ ] 23.3 Write property test for top products ordering
+  - [x] 23.3 Write property test for top products ordering
     - **Property 29: Top Products Ordering**
     - **Validates: Requirements 9.3**
-  - [ ] 23.3 Create analytics dashboard widgets
+  - [x] 23.3 Create analytics dashboard widgets
     - Create lib/features/admin/analytics/widgets/metrics_card.dart
     - Create lib/features/admin/analytics/widgets/sales_chart.dart
     - Create lib/features/admin/analytics/widgets/top_products_list.dart
@@ -342,12 +342,12 @@
 - [ ] 24. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 25. Implement real-time updates
-  - [ ] 25.1 Create real-time service
+- [x] 25. Implement real-time updates
+  - [x] 25.1 Create real-time service
     - Create lib/core/realtime/realtime_service.dart
     - Implement Supabase realtime subscriptions for products, orders, tracking
     - _Requirements: 14.1, 14.2, 14.3, 14.4_
-  - [ ] 25.2 Integrate real-time updates into providers
+  - [x] 25.2 Integrate real-time updates into providers
     - Update product_provider.dart with real-time product updates
     - Update order_provider.dart with real-time order status updates
     - Update tracking_provider.dart with real-time location updates

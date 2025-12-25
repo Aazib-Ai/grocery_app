@@ -1,7 +1,10 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../../../domain/entities/product.dart';
 import '../../../domain/repositories/product_repository.dart';
 import '../services/search_service.dart';
+import '../../../core/realtime/realtime_service.dart';
+
 
 /// State management provider for products using ChangeNotifier.
 /// 
@@ -11,7 +14,15 @@ class ProductProvider extends ChangeNotifier {
   final ProductRepository _repository;
   final SearchService? _searchService;
 
-  ProductProvider(this._repository, [this._searchService]);
+  final RealtimeService? _realtimeService;
+
+  ProductProvider(this._repository, [this._searchService, this._realtimeService]) {
+    // Optionally initialize listener here or in a method explicitly
+    // For now we will integrate it into loadProducts or a separate method if we want to toggle live mode
+  }
+
+  StreamSubscription? _productSubscription;
+
 
   // State
   List<Product> _products = [];
@@ -34,9 +45,35 @@ class ProductProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      // Initial fetch
       _products = await _repository.getProducts(
         includeInactive: includeInactive,
       );
+      
+      // Subscribe to real-time updates if service is available
+      if (_realtimeService != null) {
+        await _productSubscription?.cancel();
+        _productSubscription = _realtimeService!.productStream.listen(
+          (products) {
+            // Apply client-side filtering if needed, though stream usually gives all
+            // For simplicity, if we are admin (checked via includeInactive usually), we take all.
+            // But stream() limitation: we can't easily filter by 'active' inside stream definition dynamically 
+            // without creating multiple stream getters.
+            // Let's assume the local list keeps updated.
+            if (!includeInactive) {
+               _products = products.where((p) => p.isActive).toList();
+            } else {
+               _products = products;
+            }
+            notifyListeners();
+          },
+          onError: (error) {
+             // Handle stream error silently or log
+             // Handle stream error silently or log
+          }
+        );
+      }
+      
       _errorMessage = null;
     } catch (e) {
       _errorMessage = e.toString();
@@ -46,6 +83,13 @@ class ProductProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  @override
+  void dispose() {
+    _productSubscription?.cancel();
+    super.dispose();
+  }
+
 
   /// Get a single product by ID
   Future<Product?> getProductById(String id) async {

@@ -1,4 +1,4 @@
-import '../core/auth/user_role.dart';
+import '../../core/auth/user_role.dart';
 
 /// User model representing a user profile from the database
 class UserModel {

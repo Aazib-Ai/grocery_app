@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dart:async';
 import 'package:uuid/uuid.dart';
 import '../../core/error/app_exception.dart';
 import '../../domain/entities/delivery_location.dart';
@@ -134,42 +135,54 @@ class TrackingRepositoryImpl implements TrackingRepository {
 
   @override
   Stream<DeliveryLocation> watchDeliveryLocation(String orderId) {
-    try {
-      // Create a realtime channel for this order's delivery tracking
-      final channel = _supabase
-          .channel('delivery_tracking_$orderId')
-          .onPostgresChanges(
-            event: PostgresChangeEvent.insert,
-            schema: 'public',
-            table: 'delivery_tracking',
-            filter: PostgresChangeFilter(
-              type: PostgresChangeFilterType.eq,
-              column: 'order_id',
-              value: orderId,
-            ),
-            callback: (payload) {
-              // This callback is handled by the stream controller below
-            },
-          )
-          .subscribe();
+    // Return a stream that emits the latest location
+    // We combine initial fetch + updates
+    
+    // We use a StreamController to manage the events
+    final controller = StreamController<DeliveryLocation>();
+    
+    // 1. Fetch latest location immediately
+    getLatestLocation(orderId).then((location) {
+      if (location != null && !controller.isClosed) {
+        controller.add(location);
+      }
+    }).catchError((e) {
+      if (!controller.isClosed) controller.addError(e);
+    });
 
-      // Create a stream that emits location updates
-      return _supabase
-          .from('delivery_tracking')
-          .stream(primaryKey: ['id'])
-          .eq('order_id', orderId)
-          .order('recorded_at', ascending: false)
-          .limit(1)
-          .map((data) {
-            if (data.isEmpty) {
-              throw BusinessException('No tracking data available',
-                  code: 'NO_TRACKING_DATA');
-            }
-            return DeliveryLocationModel.fromJson(data.first).toEntity();
-          });
-    } catch (e) {
-      throw UnknownException('Failed to watch delivery location: $e');
-    }
+    // 2. Subscribe to new inserts
+    final channel = _supabase.channel('tracking_$orderId');
+    channel.onPostgresChanges(
+      event: PostgresChangeEvent.insert,
+      schema: 'public',
+      table: 'delivery_tracking',
+      filter: PostgresChangeFilter(
+        type: PostgresChangeFilterType.eq,
+        column: 'order_id',
+        value: orderId,
+      ),
+      callback: (payload) {
+        if (!controller.isClosed) {
+          try {
+            final location = DeliveryLocationModel.fromJson(payload.newRecord).toEntity();
+            controller.add(location);
+          } catch (e) {
+            // ignore parsing errors or log
+          }
+        }
+      },
+    ).subscribe((status, error) {
+       if (status == RealtimeSubscribeStatus.subscribed) {
+         // Subscription active
+       }
+    });
+
+    controller.onCancel = () async {
+      await _supabase.removeChannel(channel);
+      await controller.close();
+    };
+
+    return controller.stream;
   }
 
   @override
@@ -194,5 +207,84 @@ class TrackingRepositoryImpl implements TrackingRepository {
     } catch (e) {
       throw UnknownException('Failed to get latest location: $e');
     }
+  }
+
+  @override
+  Future<List<DeliveryLocation>> getActiveDeliveryLocations() async {
+    try {
+      // 1. Get all orders with status 'out_for_delivery'
+      final ordersResponse = await _supabase
+          .from('orders')
+          .select('id')
+          .eq('status', 'out_for_delivery');
+      
+      final activeOrderIds = (ordersResponse as List)
+          .map((o) => o['id'] as String)
+          .toList();
+
+      if (activeOrderIds.isEmpty) {
+        return [];
+      }
+
+      // 2. For each order, get the latest location
+      final locationsResponse = await _supabase
+          .from('delivery_tracking')
+          .select()
+          .inFilter('order_id', activeOrderIds)
+          .order('recorded_at', ascending: false);
+
+      // Filter locally to get latest per order
+      final latestLocations = <String, DeliveryLocation>{};
+      for (final data in locationsResponse) {
+        final loc = DeliveryLocationModel.fromJson(data).toEntity();
+        if (!latestLocations.containsKey(loc.orderId)) {
+          latestLocations[loc.orderId] = loc;
+        }
+      }
+
+      return latestLocations.values.toList();
+    } on PostgrestException catch (e) {
+      throw BusinessException('Failed to get active delivery locations: ${e.message}',
+          code: e.code);
+    } catch (e) {
+      if (e is BusinessException) rethrow;
+      throw UnknownException('Failed to get active delivery locations: $e');
+    }
+  }
+
+  @override
+  Stream<DeliveryLocation> watchAllDeliveryLocations() {
+    final controller = StreamController<DeliveryLocation>();
+
+    try {
+      final channel = _supabase
+          .channel('delivery_tracking_all')
+          .onPostgresChanges(
+            event: PostgresChangeEvent.insert,
+            schema: 'public',
+            table: 'delivery_tracking',
+            callback: (payload) {
+               if (!controller.isClosed) {
+                 try {
+                   final location = DeliveryLocationModel.fromJson(payload.newRecord).toEntity();
+                   controller.add(location);
+                 } catch (e) {
+                   // ignore
+                 }
+               }
+            },
+          )
+          .subscribe();
+          
+      controller.onCancel = () async {
+        await _supabase.removeChannel(channel);
+        await controller.close();
+      };
+      
+    } catch (e) {
+       if (!controller.isClosed) controller.addError(e);
+    }
+    
+    return controller.stream;
   }
 }

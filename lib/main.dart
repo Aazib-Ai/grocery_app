@@ -56,8 +56,12 @@ import 'features/admin/orders/admin_order_details_screen.dart';
 import 'features/admin/users/admin_users_screen.dart';
 import 'features/admin/users/admin_user_details_screen.dart';
 import 'features/admin/users/providers/admin_user_provider.dart';
+import 'features/admin/deliveries/admin_deliveries_screen.dart';
+import 'features/admin/analytics/providers/analytics_provider.dart';
+import 'data/repositories/analytics_repository_impl.dart';
 import 'data/repositories/profile_repository_impl.dart';
 import 'core/auth/user_role.dart';
+import 'core/realtime/realtime_service.dart';
 
 void main() async {
   // Ensure Flutter is initialized
@@ -123,6 +127,9 @@ class GroceryApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Create RealtimeService instance
+    final realtimeService = RealtimeService(SupabaseConfig.client);
+
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(
@@ -138,6 +145,7 @@ class GroceryApp extends StatelessWidget {
               ProductRepositoryImpl(SupabaseConfig.client),
               SupabaseConfig.client,
             ),
+            realtimeService,
           ),
         ),
         ChangeNotifierProvider(
@@ -168,11 +176,13 @@ class GroceryApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (_) => OrderProvider(
             repository: OrderRepositoryImpl(SupabaseConfig.client),
+            realtimeService: realtimeService,
           ),
         ),
         ChangeNotifierProvider(
           create: (_) => TrackingProvider(
             repository: TrackingRepositoryImpl(SupabaseConfig.client),
+            realtimeService: realtimeService,
           ),
         ),
         ChangeNotifierProvider(
@@ -183,6 +193,11 @@ class GroceryApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (_) => AdminUserProvider(
             ProfileRepositoryImpl(SupabaseConfig.client),
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => AnalyticsProvider(
+            AnalyticsRepositoryImpl(SupabaseConfig.client),
           ),
         ),
       ],
@@ -346,6 +361,10 @@ final GoRouter _router = GoRouter(
             final userId = state.pathParameters['id']!;
             return AdminUserDetailsScreen(userId: userId);
           },
+        ),
+        GoRoute(
+          path: '/admin/deliveries',
+          builder: (context, state) => const AdminDeliveriesScreen(),
         ),
       ],
     ),

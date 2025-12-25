@@ -39,4 +39,14 @@ abstract class TrackingRepository {
   /// 
   /// Returns null if no location has been recorded yet.
   Future<DeliveryLocation?> getLatestLocation(String orderId);
+
+  /// Get all active delivery locations.
+  /// 
+  /// Returns a list of the latest location for all orders that are currently 'out_for_delivery'.
+  Future<List<DeliveryLocation>> getActiveDeliveryLocations();
+
+  /// Watch all active delivery locations.
+  /// 
+  /// Returns a stream that emits new delivery locations for any active order.
+  Stream<DeliveryLocation> watchAllDeliveryLocations();
 }

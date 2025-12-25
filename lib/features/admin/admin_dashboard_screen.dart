@@ -6,7 +6,12 @@ import '../products/providers/product_provider.dart';
 import '../categories/providers/category_provider.dart';
 import '../riders/providers/rider_provider.dart';
 import '../orders/providers/order_provider.dart';
+import '../orders/providers/order_provider.dart';
 import '../users/providers/admin_user_provider.dart';
+import 'analytics/providers/analytics_provider.dart';
+import 'analytics/widgets/metrics_card.dart';
+import 'analytics/widgets/sales_chart.dart';
+import 'analytics/widgets/top_products_list.dart';
 
 /// Admin dashboard landing screen.
 /// 
@@ -29,27 +34,20 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       context.read<RiderProvider>().loadRiders();
       context.read<OrderProvider>().fetchOrders();
       context.read<AdminUserProvider>().fetchUsers();
+      context.read<AnalyticsProvider>().loadDashboardData();
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final productProvider = context.watch<ProductProvider>();
-    final categoryProvider = context.watch<CategoryProvider>();
+    final analyticsProvider = context.watch<AnalyticsProvider>();
+    final metrics = analyticsProvider.metrics;
 
-    final totalProducts = productProvider.products.length;
-    final activeProducts =
-        productProvider.products.where((p) => p.isActive).length;
-    final inactiveProducts = totalProducts - activeProducts;
-    final totalCategories = categoryProvider.categories.length;
-    final orderProvider = context.watch<OrderProvider>();
-    final pendingOrders = orderProvider.orders
-        .where((o) => o.status == OrderStatus.pending)
-        .length;
-    final totalOrders = orderProvider.orders.length;
-    final riderProvider = context.watch<RiderProvider>();
-    final totalRiders = riderProvider.riders.length;
-    final userProvider = context.watch<AdminUserProvider>();
+    if (analyticsProvider.isLoading && metrics == null) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
 
     return Scaffold(
       body: RefreshIndicator(
@@ -60,6 +58,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             context.read<RiderProvider>().refresh(),
             context.read<OrderProvider>().fetchOrders(),
             context.read<AdminUserProvider>().fetchUsers(),
+            context.read<AnalyticsProvider>().refresh(),
           ]);
         },
         child: SingleChildScrollView(
@@ -95,64 +94,55 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              GridView.count(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: 2,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-                childAspectRatio: 1.5,
-                children: [
-                  _buildMetricCard(
-                    icon: Icons.shopping_bag,
-                    title: 'Total Products',
-                    value: totalProducts.toString(),
-                    color: Colors.blue,
-                  ),
-                  _buildMetricCard(
-                    icon: Icons.check_circle,
-                    title: 'Active Products',
-                    value: activeProducts.toString(),
-                    color: Colors.green,
-                  ),
-                  _buildMetricCard(
-                    icon: Icons.remove_circle,
-                    title: 'Inactive Products',
-                    value: inactiveProducts.toString(),
-                    color: Colors.orange,
-                  ),
-                  _buildMetricCard(
-                    icon: Icons.category,
-                    title: 'Categories',
-                    value: totalCategories.toString(),
-                    color: Colors.purple,
-                  ),
-                  _buildMetricCard(
-                    icon: Icons.receipt_long,
-                    title: 'Pending Orders',
-                    value: pendingOrders.toString(),
-                    color: Colors.orange,
-                  ),
-                  _buildMetricCard(
-                    icon: Icons.shopping_basket,
-                    title: 'Total Orders',
-                    value: totalOrders.toString(),
-                    color: Colors.blueGrey,
-                  ),
-                  _buildMetricCard(
-                    icon: Icons.directions_bike,
-                    title: 'Total Riders',
-                    value: totalRiders.toString(),
-                    color: Colors.teal,
-                  ),
-                  _buildMetricCard(
-                    icon: Icons.people,
-                    title: 'Total Users',
-                    value: userProvider.users.length.toString(),
-                    color: Colors.indigo,
-                  ),
-                ],
-              ),
+              if (metrics != null)
+                GridView.count(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                  childAspectRatio: 1.5,
+                  children: [
+                    MetricsCard(
+                      icon: Icons.attach_money,
+                      title: 'Total Revenue',
+                      value: '\$${metrics.totalRevenue.toStringAsFixed(2)}',
+                      color: Colors.green,
+                    ),
+                     MetricsCard(
+                      icon: Icons.shopping_bag,
+                      title: 'Total Products',
+                      value: metrics.totalProducts.toString(),
+                      color: Colors.blue,
+                    ),
+                    MetricsCard(
+                      icon: Icons.shopping_basket,
+                      title: 'Total Orders',
+                      value: metrics.totalOrders.toString(),
+                      color: Colors.orange,
+                    ),
+                     MetricsCard(
+                      icon: Icons.people,
+                      title: 'Total Users',
+                      value: metrics.totalUsers.toString(),
+                      color: Colors.purple,
+                    ),
+                  ],
+                ),
+              
+              const SizedBox(height: 24),
+              
+              // Sales Chart
+              if (analyticsProvider.salesData.isNotEmpty) ...[
+                SalesChart(salesData: analyticsProvider.salesData),
+                const SizedBox(height: 24),
+              ],
+
+              // Top Products
+              if (analyticsProvider.topProducts.isNotEmpty) ...[
+                TopProductsList(products: analyticsProvider.topProducts),
+                const SizedBox(height: 24),
+              ],
               const SizedBox(height: 32),
 
               // Quick actions
@@ -214,6 +204,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               const SizedBox(height: 12),
               _buildQuickActionButton(
                 context,
+                icon: Icons.map,
+                title: 'Active Deliveries',
+                subtitle: 'Track active deliveries on map',
+                onTap: () => context.go('/admin/deliveries'),
+              ),
+              const SizedBox(height: 12),
+              _buildQuickActionButton(
+                context,
                 icon: Icons.people_outline,
                 title: 'Manage Users',
                 subtitle: 'View and manage customer accounts',
@@ -226,46 +224,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
-  Widget _buildMetricCard({
-    required IconData icon,
-    required String title,
-    required String value,
-    required Color color,
-  }) {
-    return Card(
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Icon(icon, size: 32, color: color),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: color,
-                  ),
-                ),
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  /* Removed old _buildMetricCard helper as we use MetricsCard widget now */
 
   Widget _buildQuickActionButton(
     BuildContext context, {
