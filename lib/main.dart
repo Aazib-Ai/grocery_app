@@ -43,6 +43,7 @@ import 'features/profile/edit_profile_screen.dart';
 import 'features/profile/addresses_screen.dart';
 import 'features/profile/address_form_screen.dart';
 import 'features/orders/orders_screen.dart';
+import 'features/orders/order_details_screen.dart';
 
 import 'main_wrapper.dart';
 import 'features/admin/admin_wrapper.dart';
@@ -209,7 +210,7 @@ class GroceryApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (_) => ProfileProvider(
             SupabaseConfig.client,
-            MockImageStorageService(),
+            R2ImageStorageService(),
           ),
         ),
       ],
@@ -410,7 +411,10 @@ final GoRouter _router = GoRouter(
     GoRoute(
       path: '/payment',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) => const PaymentMethodScreen(),
+      builder: (context, state) {
+        final deliveryDetails = state.extra as Map<String, dynamic>?;
+        return PaymentMethodScreen(deliveryDetails: deliveryDetails);
+      },
     ),
     GoRoute(
       path: '/tracking/:orderId',
@@ -448,7 +452,13 @@ final GoRouter _router = GoRouter(
     GoRoute(
       path: '/products',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) => const ProductListingScreen(),
+      builder: (context, state) {
+        final extra = state.extra as Map<String, String?>?;
+        return ProductListingScreen(
+          categoryId: extra?['categoryId'],
+          categoryName: extra?['categoryName'],
+        );
+      },
     ),
     GoRoute(
       path: '/product/:id',
@@ -472,6 +482,14 @@ final GoRouter _router = GoRouter(
       path: '/orders',
       parentNavigatorKey: _rootNavigatorKey,
       builder: (context, state) => const OrdersScreen(),
+    ),
+    GoRoute(
+      path: '/order_details/:id',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (context, state) {
+        final orderId = state.pathParameters['id']!;
+        return OrderDetailsScreen(orderId: orderId);
+      },
     ),
     GoRoute(
       path: '/addresses',

@@ -45,16 +45,7 @@ app.*.map.json
 /android/app/release
 
 # Environment variables - IMPORTANT: Never commit secrets!
-.env
-.env.local
-.env.development
-.env.staging
-.env.production
-.env*.local
-*.env
 
-# Keep example env file
-!.env.example
 
 # Secret keys and credentials
 *.jks
@@ -133,3 +124,6 @@ flutter_*.log
 
 # Web specific
 /web/favicon.png
+
+# YoYo AI version control directory
+.yoyo/

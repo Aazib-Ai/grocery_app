@@ -65,102 +65,154 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         foregroundColor: Colors.black,
-        leading: IconButton(
+          leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () {},
+          onPressed: () => context.pop(),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-             Text(
-              "Payment",
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                fontSize: 32,
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: IntrinsicHeight(
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                       Text(
+                        "Payment",
+                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 32,
+                        ),
+                      ),
+                      const SizedBox(height: 30),
+                       const Text(
+                        "Payment Method",
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      const SizedBox(height: 16),
+                      InfoCard(
+                        child: Column(
+                          children: [
+                            SelectionTile(
+                              title: "Card",
+                              icon: _buildIcon(Icons.credit_card, AppColors.greenIconBg),
+                              isSelected: _selectedMethod == 0,
+                              onTap: () => setState(() => _selectedMethod = 0),
+                            ),
+                             const Divider(),
+                            SelectionTile(
+                              title: "Bank account",
+                              icon: _buildIcon(Icons.account_balance, AppColors.pinkIconBg),
+                              isSelected: _selectedMethod == 1,
+                              onTap: () => setState(() => _selectedMethod = 1),
+                            ),
+                             const Divider(),
+                            SelectionTile(
+                              title: "Paypal",
+                              icon: _buildIcon(Icons.payment, AppColors.blueIconBg),
+                              isSelected: _selectedMethod == 2,
+                              onTap: () => setState(() => _selectedMethod = 2),
+                            ),
+                          ],
+                        ),
+                      ),
+                       const SizedBox(height: 30),
+                      const Text(
+                        "Delivery Method",
+                         style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                       const SizedBox(height: 16),
+                       InfoCard(
+                         child: Column(
+                           children: [
+                             SelectionTile(
+                              title: "Pick up",
+                              isSelected: _selectedDeliveryMethod == 0,
+                              onTap: () => setState(() => _selectedDeliveryMethod = 0),
+                            ),
+                             const Divider(),
+                             SelectionTile(
+                              title: "Delivery",
+                              isSelected: _selectedDeliveryMethod == 1,
+                              onTap: () => setState(() => _selectedDeliveryMethod = 1),
+                            ),
+                           ]
+                         )
+                       ),
+                       const Spacer(),
+                       Consumer<CartProvider>(
+                         builder: (context, cartProvider, _) {
+                           // Check if pickup method is selected (no delivery fee)
+                           final isPickup = _selectedDeliveryMethod == 0;
+                           final total = isPickup ? cartProvider.subtotal : cartProvider.total;
+                           
+                           return Column(
+                             children: [
+                               Row(
+                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                 children: [
+                                   const Text(
+                                     "Subtotal",
+                                     style: TextStyle(fontSize: 16, color: Colors.grey),
+                                   ),
+                                   Text(
+                                     "Rs ${cartProvider.subtotal.toStringAsFixed(0)}",
+                                     style: Theme.of(context).textTheme.bodyLarge,
+                                   ),
+                                 ],
+                               ),
+                               const SizedBox(height: 8),
+                               Row(
+                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                 children: [
+                                   const Text(
+                                     "Delivery Fee",
+                                     style: TextStyle(fontSize: 16, color: Colors.grey),
+                                   ),
+                                   Text(
+                                     isPickup ? "Free" : "Rs ${cartProvider.deliveryFee.toStringAsFixed(0)}",
+                                     style: Theme.of(context).textTheme.bodyLarge,
+                                   ),
+                                 ],
+                               ),
+                               const Divider(),
+                               Row(
+                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                 children: [
+                                   const Text(
+                                     "Total",
+                                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                   ),
+                                   Text(
+                                     "Rs ${total.toStringAsFixed(0)}",
+                                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                       fontWeight: FontWeight.bold,
+                                       color: AppColors.primaryGreen,
+                                     ),
+                                   ),
+                                 ],
+                               ),
+                             ],
+                           );
+                         },
+                       ),
+                       const SizedBox(height: 20),
+                      PrimaryButton(
+                        text: "Proceed to Payment",
+                        onPressed: () => _showNoteDialog(context),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+                  ),
+                ),
               ),
             ),
-            const SizedBox(height: 30),
-             const Text(
-              "Payment Method", // Small typo in design "Mathod" fixed here
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            const SizedBox(height: 16),
-            InfoCard(
-              child: Column(
-                children: [
-                  SelectionTile(
-                    title: "Card",
-                    icon: _buildIcon(Icons.credit_card, AppColors.greenIconBg),
-                    isSelected: _selectedMethod == 0,
-                    onTap: () => setState(() => _selectedMethod = 0),
-                  ),
-                   const Divider(),
-                  SelectionTile(
-                    title: "Bank account",
-                    icon: _buildIcon(Icons.account_balance, AppColors.pinkIconBg),
-                    isSelected: _selectedMethod == 1,
-                    onTap: () => setState(() => _selectedMethod = 1),
-                  ),
-                   const Divider(),
-                  SelectionTile(
-                    title: "Paypal",
-                    icon: _buildIcon(Icons.payment, AppColors.blueIconBg),
-                    isSelected: _selectedMethod == 2,
-                    onTap: () => setState(() => _selectedMethod = 2),
-                  ),
-                ],
-              ),
-            ),
-             const SizedBox(height: 30),
-            const Text(
-              "Delivery method.",
-               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-             const SizedBox(height: 16),
-             InfoCard(
-               child: Column(
-                 children: [
-                   SelectionTile(
-                    title: "Pick up",
-                    isSelected: _selectedDeliveryMethod == 0,
-                    onTap: () => setState(() => _selectedDeliveryMethod = 0),
-                  ),
-                   const Divider(),
-                   SelectionTile(
-                    title: "Delivery",
-                    isSelected: _selectedDeliveryMethod == 1,
-                    onTap: () => setState(() => _selectedDeliveryMethod = 1),
-                  ),
-                 ]
-               )
-             ),
-             const Spacer(),
-             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  "Total",
-                  style: TextStyle(fontSize: 16),
-                ),
-                Text(
-                  "23,000",
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-             const SizedBox(height: 20),
-            PrimaryButton(
-              text: "Confirm", // Matches design
-              onPressed: () => _showNoteDialog(context),
-            ),
-            const SizedBox(height: 20),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -278,7 +330,7 @@ class _CheckoutNoteModalState extends State<CheckoutNoteModal> {
         children: [
           Row(
             children: [
-              IconButton(onPressed: (){}, icon: const Icon(Icons.close)), // Not in design but good UX? Actually design design has "Please note"
+              IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close)),
                const Expanded(
                  child: Text(
                   "Please note",

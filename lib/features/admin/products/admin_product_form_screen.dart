@@ -47,8 +47,8 @@ class _AdminProductFormScreenState extends State<AdminProductFormScreen> {
   @override
   void initState() {
     super.initState();
-    // Use Mock for now - replace with R2ImageStorageService in production
-    _imageStorage = MockImageStorageService();
+    // Use R2ImageStorageService for real image uploads
+    _imageStorage = R2ImageStorageService();
 
     if (widget.isEditMode) {
       WidgetsBinding.instance.addPostFrameCallback((_) {

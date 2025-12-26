@@ -34,6 +34,8 @@ class ProfileProvider extends ChangeNotifier {
   List<Address> get addresses => _addresses;
   bool get isLoading => _isLoading;
   String? get error => _error;
+  String? get currentUserId => _supabase.auth.currentUser?.id;
+
   Address? get defaultAddress => _addresses.firstWhere(
         (addr) => addr.isDefault,
         orElse: () => _addresses.isNotEmpty ? _addresses.first : throw StateError('No addresses available'),

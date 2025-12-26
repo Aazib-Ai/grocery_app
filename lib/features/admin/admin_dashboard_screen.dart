@@ -39,95 +39,93 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final analyticsProvider = context.watch<AnalyticsProvider>();
-    final metrics = analyticsProvider.metrics;
+    return Consumer<AnalyticsProvider>(
+      builder: (context, analyticsProvider, child) {
+        final metrics = analyticsProvider.metrics;
 
-    if (analyticsProvider.isLoading && metrics == null) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
+        if (analyticsProvider.isLoading && metrics == null) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-    return Scaffold(
-      body: RefreshIndicator(
-        onRefresh: () async {
-          await Future.wait([
-            context.read<ProductProvider>().refresh(includeInactive: true),
-            context.read<CategoryProvider>().refresh(),
-            context.read<RiderProvider>().refresh(),
-            context.read<OrderProvider>().fetchOrders(),
-            context.read<AdminUserProvider>().fetchUsers(),
-            context.read<AnalyticsProvider>().refresh(),
-          ]);
-        },
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Welcome section
-              const Text(
-                'Welcome to Admin Dashboard',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
+        return RefreshIndicator(
+          onRefresh: () async {
+            await Future.wait([
+              context.read<ProductProvider>().refresh(includeInactive: true),
+              context.read<CategoryProvider>().refresh(),
+              context.read<RiderProvider>().refresh(),
+              context.read<OrderProvider>().fetchOrders(),
+              context.read<AdminUserProvider>().fetchUsers(),
+              context.read<AnalyticsProvider>().refresh(),
+            ]);
+          },
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Welcome section
+                const Text(
+                  'Welcome to Admin Dashboard',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Manage your grocery store from here',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey[600],
+                const SizedBox(height: 8),
+                Text(
+                  'Manage your grocery store from here',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey[600],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 24),
+                const SizedBox(height: 24),
 
-              // Overview cards
-              const Text(
-                'Overview',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+                // Overview cards
+                const Text(
+                  'Overview',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              if (metrics != null)
-                GridView.count(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                  childAspectRatio: 1.5,
-                  children: [
-                    MetricsCard(
-                      icon: Icons.attach_money,
-                      title: 'Total Revenue',
-                      value: '\$${metrics.totalRevenue.toStringAsFixed(2)}',
-                      color: Colors.green,
-                    ),
-                     MetricsCard(
-                      icon: Icons.shopping_bag,
-                      title: 'Total Products',
-                      value: metrics.totalProducts.toString(),
-                      color: Colors.blue,
-                    ),
-                    MetricsCard(
-                      icon: Icons.shopping_basket,
-                      title: 'Total Orders',
-                      value: metrics.totalOrders.toString(),
-                      color: Colors.orange,
-                    ),
-                     MetricsCard(
-                      icon: Icons.people,
-                      title: 'Total Users',
-                      value: metrics.totalUsers.toString(),
-                      color: Colors.purple,
-                    ),
-                  ],
-                ),
+                const SizedBox(height: 16),
+                if (metrics != null)
+                  GridView.count(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                    childAspectRatio: 1.5,
+                    children: [
+                      MetricsCard(
+                        icon: Icons.attach_money,
+                        title: 'Total Revenue',
+                        value: '\$${metrics.totalRevenue.toStringAsFixed(2)}',
+                        color: Colors.green,
+                      ),
+                      MetricsCard(
+                        icon: Icons.shopping_bag,
+                        title: 'Total Products',
+                        value: metrics.totalProducts.toString(),
+                        color: Colors.blue,
+                      ),
+                      MetricsCard(
+                        icon: Icons.shopping_basket,
+                        title: 'Total Orders',
+                        value: metrics.totalOrders.toString(),
+                        color: Colors.orange,
+                      ),
+                      MetricsCard(
+                        icon: Icons.people,
+                        title: 'Total Users',
+                        value: metrics.totalUsers.toString(),
+                        color: Colors.purple,
+                      ),
+                    ],
+                  ),
               
               const SizedBox(height: 24),
               
@@ -219,7 +217,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             ],
           ),
         ),
-      ),
+        );
+      },
     );
   }
 

@@ -44,8 +44,8 @@ class _AdminRiderFormScreenState extends State<AdminRiderFormScreen> {
   @override
   void initState() {
     super.initState();
-    // Using Mock for now as per project convention in other admin screens
-    _imageStorage = MockImageStorageService();
+    // Use R2ImageStorageService for real image uploads
+    _imageStorage = R2ImageStorageService();
 
     if (widget.isEditMode) {
       WidgetsBinding.instance.addPostFrameCallback((_) {

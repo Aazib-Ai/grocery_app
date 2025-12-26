@@ -6,12 +6,14 @@ class CartItemWidget extends StatelessWidget {
   final CartItem item;
   final VoidCallback? onIncrement;
   final VoidCallback? onDecrement;
+  final VoidCallback? onRemove;
 
   const CartItemWidget({
     super.key,
     required this.item,
     this.onIncrement,
     this.onDecrement,
+    this.onRemove,
   });
 
   @override
@@ -90,7 +92,7 @@ class CartItemWidget extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  "#${item.price.toStringAsFixed(2)}",
+                  "\Rs.${item.price.toStringAsFixed(2)}",
                   style: const TextStyle(
                     color: AppColors.primaryGreen,
                     fontWeight: FontWeight.bold,
@@ -100,41 +102,54 @@ class CartItemWidget extends StatelessWidget {
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: AppColors.primaryGreen,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              children: [
-                InkWell(
-                  onTap: onDecrement,
-                  child: const Icon(
-                    Icons.remove,
-                    color: Colors.white,
-                    size: 16,
-                  ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.delete_outline, color: Colors.red),
+                onPressed: onRemove,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                iconSize: 20,
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryGreen,
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  "${item.quantity}",
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
+                child: Row(
+                  children: [
+                    InkWell(
+                      onTap: onDecrement,
+                      child: const Icon(
+                        Icons.remove,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      "${item.quantity}",
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    InkWell(
+                      onTap: onIncrement,
+                      child: const Icon(
+                        Icons.add,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                InkWell(
-                  onTap: onIncrement,
-                  child: const Icon(
-                    Icons.add,
-                    color: Colors.white,
-                    size: 16,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
       ),

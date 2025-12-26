@@ -65,7 +65,7 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
     }
 
     final provider = context.read<ProfileProvider>();
-    final userId = provider.userProfile?.id;
+    final userId = provider.currentUserId;
 
     if (userId == null) {
       ScaffoldMessenger.of(context).showSnackBar(

@@ -8,7 +8,14 @@ import '../../shared/widgets/custom_error_widget.dart';
 import 'providers/product_provider.dart';
 
 class ProductListingScreen extends StatefulWidget {
-  const ProductListingScreen({super.key});
+  final String? categoryId;
+  final String? categoryName;
+
+  const ProductListingScreen({
+    super.key,
+    this.categoryId,
+    this.categoryName,
+  });
 
   @override
   State<ProductListingScreen> createState() => _ProductListingScreenState();
@@ -18,20 +25,26 @@ class _ProductListingScreenState extends State<ProductListingScreen> {
   @override
   void initState() {
     super.initState();
-    // Load products when screen initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ProductProvider>().loadProducts();
+      if (widget.categoryId != null) {
+        context.read<ProductProvider>().loadProductsByCategory(widget.categoryId!);
+      } else {
+        context.read<ProductProvider>().loadProducts();
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text("Products"),
+        title: Text(
+          widget.categoryName ?? "Products",
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
         centerTitle: true,
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.white,
         elevation: 0,
         foregroundColor: Colors.black,
         leading: IconButton(
@@ -43,27 +56,16 @@ class _ProductListingScreenState extends State<ProductListingScreen> {
         builder: (context, provider, child) {
           if (provider.isLoading) {
             return GridView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                maxCrossAxisExtent: 220,
+              padding: const EdgeInsets.all(24),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
                 childAspectRatio: 0.7,
                 crossAxisSpacing: 16,
                 mainAxisSpacing: 16,
               ),
               itemCount: 6,
               itemBuilder: (context, index) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Expanded(
-                      child: SkeletonLoader(width: double.infinity, height: double.infinity, borderRadius: 12),
-                    ),
-                    const SizedBox(height: 8),
-                    const SkeletonLoader(width: 100, height: 16),
-                    const SizedBox(height: 4),
-                    const SkeletonLoader(width: 60, height: 16),
-                  ],
-                );
+                return const SkeletonLoader(width: double.infinity, height: double.infinity, borderRadius: 20);
               },
             );
           }
@@ -78,29 +80,28 @@ class _ProductListingScreenState extends State<ProductListingScreen> {
           final products = provider.products;
 
           if (products.isEmpty) {
-            return const Center(
-              child: Text('No products available'),
-            );
+            return const Center(child: Text('No products available'));
           }
 
           return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 20),
               Padding(
-                padding: const EdgeInsets.all(24.0),
+                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 10),
                 child: Text(
-                  "Found ${products.length} results",
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 28,
-                      ),
+                  "${products.length} Products Found",
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
               Expanded(
                 child: GridView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
-                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: 220,
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
                     childAspectRatio: 0.7,
                     crossAxisSpacing: 16,
                     mainAxisSpacing: 16,

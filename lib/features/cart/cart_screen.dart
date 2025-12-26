@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../shared/widgets/custom_button.dart';
@@ -33,7 +34,7 @@ class _CartScreenState extends State<CartScreen> {
         foregroundColor: Colors.black,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => context.pop(),
         ),
       ),
       body: Consumer<CartProvider>(
@@ -116,7 +117,7 @@ class _CartScreenState extends State<CartScreen> {
                     ),
                     const SizedBox(height: 32),
                     ElevatedButton(
-                      onPressed: () => Navigator.pop(context),
+                      onPressed: () => context.pop(),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primaryGreen,
                         foregroundColor: Colors.white,
@@ -207,6 +208,7 @@ class _CartScreenState extends State<CartScreen> {
                             cartProvider.incrementQuantity(item.productId),
                         onDecrement: () =>
                             cartProvider.decrementQuantity(item.productId),
+                        onRemove: () => cartProvider.removeItem(item.productId),
                       ),
                     );
                   },
@@ -238,7 +240,7 @@ class _CartScreenState extends State<CartScreen> {
                                   ),
                         ),
                         Text(
-                          '#${cartProvider.subtotal.toStringAsFixed(2)}',
+                          'Rs. ${cartProvider.subtotal.toStringAsFixed(2)}',
                           style:
                               Theme.of(context).textTheme.bodyLarge?.copyWith(
                                     fontWeight: FontWeight.w600,
@@ -258,7 +260,7 @@ class _CartScreenState extends State<CartScreen> {
                                   ),
                         ),
                         Text(
-                          '#${cartProvider.deliveryFee.toStringAsFixed(2)}',
+                          'Rs. ${cartProvider.deliveryFee.toStringAsFixed(2)}',
                           style:
                               Theme.of(context).textTheme.bodyLarge?.copyWith(
                                     fontWeight: FontWeight.w600,
@@ -278,7 +280,7 @@ class _CartScreenState extends State<CartScreen> {
                                   ),
                         ),
                         Text(
-                          '#${cartProvider.total.toStringAsFixed(2)}',
+                          'Rs. ${cartProvider.total.toStringAsFixed(2)}',
                           style:
                               Theme.of(context).textTheme.titleLarge?.copyWith(
                                     fontWeight: FontWeight.bold,
@@ -291,12 +293,7 @@ class _CartScreenState extends State<CartScreen> {
                     PrimaryButton(
                       text: "Complete order",
                       onPressed: () {
-                        // TODO: Navigate to checkout
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Checkout will be implemented soon'),
-                          ),
-                        );
+                        context.push('/delivery');
                       },
                     ),
                   ],
