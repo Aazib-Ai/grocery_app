@@ -88,6 +88,9 @@ desktop.ini
 *.log
 crash_log*.txt
 flutter_*.log
+# Ignore all test files
+test/
+*_test.dart
 
 # Temporary files
 *.tmp
@@ -127,3 +130,7 @@ flutter_*.log
 
 # YoYo AI version control directory
 .yoyo/
+
+# Ignore all test files
+test/
+*_test.dart
